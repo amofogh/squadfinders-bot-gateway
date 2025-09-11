@@ -32,6 +32,9 @@ const parseTimeframe = (timeframe) => {
 export const dashboardController = {
   // Get dashboard statistics
   getStats: handleAsyncError(async (req, res) => {
+    const { timeRange = '24h' } = req.query;
+    const startDate = parseTimeframe(timeRange);
+
     const [playerCount, messageCount, adminUserCount] = await Promise.all([
       Player.countDocuments(),
       Message.countDocuments(),
@@ -49,30 +52,32 @@ export const dashboardController = {
       Message.countDocuments({ is_valid: true })
     ]);
 
-    // AI Status counts
-    const [pendingMessages, processingMessages, completedMessages, failedMessages, expiredMessages, pendingPrefilterMessages] = await Promise.all([
+    // AI Status counts (all time)
+    const [pendingMessages, completedMessages, failedMessages, expiredMessages, pendingPrefilterMessages] = await Promise.all([
       Message.countDocuments({ ai_status: 'pending', is_valid: true }),
-      Message.countDocuments({ ai_status: 'processing' }),
       Message.countDocuments({ ai_status: 'completed' }),
       Message.countDocuments({ ai_status: 'failed' }),
       Message.countDocuments({ ai_status: 'expired' }),
       Message.countDocuments({ ai_status: 'pending_prefilter' })
     ]);
 
-    // Calculate messages per minute (last hour)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const [messagesLastHour, validMessagesLastHour] = await Promise.all([
-      Message.countDocuments({ message_date: { $gte: oneHourAgo } }),
-      Message.countDocuments({ message_date: { $gte: oneHourAgo }, is_valid: true })
+    // Calculate messages per minute for the selected time range
+    const timeRangeMs = Date.now() - startDate.getTime();
+    const timeRangeMinutes = timeRangeMs / (1000 * 60);
+    
+    const [messagesInRange, validMessagesInRange] = await Promise.all([
+      Message.countDocuments({ message_date: { $gte: startDate } }),
+      Message.countDocuments({ message_date: { $gte: startDate }, is_valid: true })
     ]);
 
-    // Calculate messages today (from 00:00 today until now)
+    // Calculate messages today (from 00:00 today until now) - for "deleted today"
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const [messagesToday, validMessagesToday] = await Promise.all([
-      Message.countDocuments({ message_date: { $gte: startOfToday } }),
-      Message.countDocuments({ message_date: { $gte: startOfToday }, is_valid: true })
+    // Messages for the selected time range (not just today)
+    const [messagesForTimeRange, validMessagesForTimeRange] = await Promise.all([
+      Message.countDocuments({ message_date: { $gte: startDate } }),
+      Message.countDocuments({ message_date: { $gte: startDate }, is_valid: true })
     ]);
 
     res.json({
@@ -87,15 +92,14 @@ export const dashboardController = {
         lfgMessages,
         validMessages,
         pendingMessages,
-        processingMessages,
         completedMessages,
         failedMessages,
         expiredMessages,
         pendingPrefilterMessages,
-        messagesPerMinute: Math.round(messagesLastHour / 60 * 100) / 100,
-        validMessagesPerMinute: Math.round(validMessagesLastHour / 60 * 100) / 100,
-        messagesToday,
-        validMessagesToday,
+        messagesPerMinute: timeRangeMinutes > 0 ? Math.round(messagesInRange / timeRangeMinutes * 100) / 100 : 0,
+        validMessagesPerMinute: timeRangeMinutes > 0 ? Math.round(validMessagesInRange / timeRangeMinutes * 100) / 100 : 0,
+        messagesToday: messagesForTimeRange,
+        validMessagesToday: validMessagesForTimeRange,
         deletedToday: deletionStats?.deletedToday || 0
       }
     });
@@ -211,7 +215,13 @@ export const dashboardController = {
 
   // Get AI status distribution
   getAIStatusDistribution: handleAsyncError(async (req, res) => {
+    const { timeRange = '24h' } = req.query;
+    const startDate = parseTimeframe(timeRange);
+    
     const distribution = await Message.aggregate([
+      {
+        $match: { message_date: { $gte: startDate } }
+      },
       {
         $group: {
           _id: '$ai_status',
@@ -221,7 +231,10 @@ export const dashboardController = {
     ]);
     
     // Add unknown status for messages without ai_status (null values)
-    const unknownCount = await Message.countDocuments({ ai_status: { $exists: false } });
+    const unknownCount = await Message.countDocuments({ 
+      ai_status: { $exists: false },
+      message_date: { $gte: startDate }
+    });
     if (unknownCount > 0) {
       distribution.push({ _id: 'unknown', count: unknownCount });
     }
