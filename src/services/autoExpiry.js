@@ -2,145 +2,57 @@ import {Message} from '../models/index.js';
 import {config} from '../config/index.js';
 import {logAutoExpiry, logError} from '../utils/logger.js';
 
-export class AutoExpiryService {
-    constructor() {
-        this.intervalId = null;
-        this.isRunning = false;
-        this.enabled = config.autoExpiry.enabled;
-        this.expiryMinutes = config.autoExpiry.expiryMinutes;
-        this.intervalMinutes = config.autoExpiry.intervalMinutes;
+function createAutoExpiryService() {
+    let intervalId = null;
+    let isRunning = false;
+    let enabled = config.autoExpiry.enabled;
+    let expiryMinutes = config.autoExpiry.expiryMinutes;
+    const intervalMinutes = config.autoExpiry.intervalMinutes;
+
+    function stop() {
+        if (intervalId) {
+            clearInterval(intervalId);
+            logAutoExpiry('Service stopped', {intervalId});
+            intervalId = null;
+            isRunning = false;
+        }
     }
 
-    // Start the auto-expiry job
-    start(intervalMinutes = null) {
-        if (!this.enabled) {
-            logAutoExpiry('Service disabled', {
-                reason: 'AUTO_EXPIRY_ENABLED is false',
-                config: {enabled: this.enabled}
-            });
+    function setEnabled(value) {
+        enabled = value;
+        if (!value && isRunning) {
+            stop();
+        }
+    }
+
+    function setExpiryMinutes(minutes) {
+        expiryMinutes = minutes;
+        logAutoExpiry('Expiry minutes updated', {minutes});
+    }
+
+    async function expireOldMessages() {
+        if (!enabled) {
             return;
         }
-
-        if (this.isRunning) {
-            logAutoExpiry('Service already running', {intervalId: this.intervalId});
-            return;
-        }
-
-  // Enable/disable the service
-  setEnabled(enabled) {
-    this.enabled = enabled;
-    if (!enabled && this.isRunning) {
-      this.stop();
-    }
-  }
-
-  // Update expiry time
-  setExpiryMinutes(minutes) {
-    this.expiryMinutes = minutes;
-    logAutoExpiry('Expiry minutes updated', { minutes });
-  }
-
-  // Expire messages older than configured minutes that are still pending
-  async expireOldMessages() {
-    if (!this.enabled) return;
-
-    try {
-      logAutoExpiry('Starting expiry check', {
-        expiryMinutes: this.expiryMinutes,
-        cutoffTime: new Date(Date.now() - this.expiryMinutes * 60 * 1000).toISOString()
-      });
-
-      const expiryTime = new Date(Date.now() - this.expiryMinutes * 60 * 1000);
-      
-      // First, count messages that will be expired
-      const messagesToExpireCount = await Message.countDocuments({
-        ai_status: { $in: ['pending', 'pending_prefilter', 'processing'] },
-        message_date: { $lt: expiryTime }
-      });
-
-      if (messagesToExpireCount > 0) {
-        // Get sample of messages for logging
-        const sampleMessages = await Message.find({
-          ai_status: { $in: ['pending', 'pending_prefilter', 'processing'] },
-          message_date: { $lt: expiryTime }
-        })
-        .select('message_id message_date ai_status')
-        .limit(10)
-        .lean();
-
-        logAutoExpiry('Found messages to expire', {
-          totalCount: messagesToExpireCount,
-          expiryTime: expiryTime.toISOString(),
-          sampleMessages: sampleMessages.map(m => ({
-            messageId: m.message_id,
-            messageDate: m.message_date.toISOString(),
-            aiStatus: m.ai_status,
-            ageMinutes: Math.round((Date.now() - m.message_date.getTime()) / (1000 * 60))
-          }))
-          
-        const interval = intervalMinutes || this.intervalMinutes;
-        logAutoExpiry('Service starting', {
-            intervalMinutes: interval,
-            expiryMinutes: this.expiryMinutes,
-            enabled: this.enabled
-        });
-
-        this.intervalId = setInterval(async () => {
-            await this.expireOldMessages();
-        }, interval * 60 * 1000);
-
-        this.isRunning = true;
-
-        // Run immediately on start
-        this.expireOldMessages();
-    }
-
-    // Stop the auto-expiry job
-    stop() {
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            logAutoExpiry('Service stopped', {intervalId: this.intervalId});
-            this.intervalId = null;
-            this.isRunning = false;
-        }
-    }
-
-    // Enable/disable the service
-    setEnabled(enabled) {
-        this.enabled = enabled;
-        if (!enabled && this.isRunning) {
-            this.stop();
-        }
-    }
-
-    // Update expiry time
-    setExpiryMinutes(minutes) {
-        this.expiryMinutes = minutes;
-        console.log(`⏰ Auto-expiry time updated to ${minutes} minutes`);
-    }
-
-    // Expire messages older than configured minutes that are still pending
-    async expireOldMessages() {
-        if (!this.enabled) return;
 
         try {
+            const expiryTime = new Date(Date.now() - expiryMinutes * 60 * 1000);
+
             logAutoExpiry('Starting expiry check', {
-                expiryMinutes: this.expiryMinutes,
-                cutoffTime: new Date(Date.now() - this.expiryMinutes * 60 * 1000).toISOString()
+                expiryMinutes,
+                cutoffTime: expiryTime.toISOString()
             });
 
-            const expiryTime = new Date(Date.now() - this.expiryMinutes * 60 * 1000);
+            const statusFilter = {$in: ['pending', 'pending_prefilter', 'processing']};
 
-            // First, count messages that will be expired
             const messagesToExpireCount = await Message.countDocuments({
-                ai_status: {$in: ['pending', 'pending_prefilter', 'processing']},
+                ai_status: statusFilter,
                 message_date: {$lt: expiryTime}
             });
 
             if (messagesToExpireCount > 0) {
-                // Get sample of messages for logging
                 const sampleMessages = await Message.find({
-                    ai_status: {$in: ['pending', 'pending_prefilter', 'processing']},
+                    ai_status: statusFilter,
                     message_date: {$lt: expiryTime}
                 })
                     .select('message_id message_date ai_status')
@@ -150,24 +62,23 @@ export class AutoExpiryService {
                 logAutoExpiry('Found messages to expire', {
                     totalCount: messagesToExpireCount,
                     expiryTime: expiryTime.toISOString(),
-                    sampleMessages: sampleMessages.map(m => ({
-                        messageId: m.message_id,
-                        messageDate: m.message_date.toISOString(),
-                        aiStatus: m.ai_status,
-                        ageMinutes: Math.round((Date.now() - m.message_date.getTime()) / (1000 * 60))
+                    sampleMessages: sampleMessages.map((message) => ({
+                        messageId: message.message_id,
+                        messageDate: message.message_date.toISOString(),
+                        aiStatus: message.ai_status,
+                        ageMinutes: Math.round((Date.now() - message.message_date.getTime()) / (1000 * 60))
                     }))
                 });
             }
 
-            // Process in batches to handle large datasets efficiently
             const batchSize = 1000;
             let totalExpired = 0;
 
             while (true) {
                 const result = await Message.updateMany(
                     {
-                        ai_status: {$in: ['pending', 'pending_prefilter', 'processing']},
-                        message_date: {$lt: expiryTime} // Use message_date instead of createdAt
+                        ai_status: statusFilter,
+                        message_date: {$lt: expiryTime}
                     },
                     {
                         $set: {ai_status: 'expired'}
@@ -181,11 +92,10 @@ export class AutoExpiryService {
                     logAutoExpiry('Batch expired', {
                         batchExpired: result.modifiedCount,
                         totalExpiredSoFar: totalExpired,
-                        batchSize: batchSize
+                        batchSize
                     });
                 }
 
-                // If we processed fewer than the batch size, we're done
                 if (result.modifiedCount < batchSize) {
                     break;
                 }
@@ -193,14 +103,14 @@ export class AutoExpiryService {
 
             if (totalExpired > 0) {
                 logAutoExpiry('Expiry completed', {
-                    totalExpired: totalExpired,
-                    expiryMinutes: this.expiryMinutes,
+                    totalExpired,
+                    expiryMinutes,
                     expiryTime: expiryTime.toISOString()
                 });
             } else {
                 logAutoExpiry('No messages to expire', {
                     expiryTime: expiryTime.toISOString(),
-                    expiryMinutes: this.expiryMinutes
+                    expiryMinutes
                 });
             }
         } catch (error) {
@@ -208,24 +118,69 @@ export class AutoExpiryService {
                 service: 'auto-expiry',
                 action: 'expireOldMessages',
                 config: {
-                    enabled: this.enabled,
-                    expiryMinutes: this.expiryMinutes
+                    enabled,
+                    expiryMinutes
                 }
             });
         }
     }
 
-    // Get service status
-    getStatus() {
+    function start(customIntervalMinutes = null) {
+        if (!enabled) {
+            logAutoExpiry('Service disabled', {
+                reason: 'AUTO_EXPIRY_ENABLED is false',
+                config: {enabled}
+            });
+            return;
+        }
+
+        if (isRunning) {
+            logAutoExpiry('Service already running', {intervalId});
+            return;
+        }
+
+        const interval = customIntervalMinutes || intervalMinutes;
+
+        logAutoExpiry('Service starting', {
+            intervalMinutes: interval,
+            expiryMinutes,
+            enabled
+        });
+
+        intervalId = setInterval(async () => {
+            try {
+                await expireOldMessages();
+            } catch (error) {
+                logError(error, {
+                    service: 'auto-expiry',
+                    action: 'interval-expireOldMessages'
+                });
+            }
+        }, interval * 60 * 1000);
+
+        isRunning = true;
+
+        expireOldMessages();
+    }
+
+    function getStatus() {
         return {
-            isRunning: this.isRunning,
-            enabled: this.enabled,
-            expiryMinutes: this.expiryMinutes,
-            intervalMinutes: this.intervalMinutes,
-            intervalId: this.intervalId
+            isRunning,
+            enabled,
+            expiryMinutes,
+            intervalMinutes,
+            intervalId
         };
     }
+
+    return {
+        start,
+        stop,
+        setEnabled,
+        setExpiryMinutes,
+        expireOldMessages,
+        getStatus
+    };
 }
 
-// Create singleton instance
-export const autoExpiryService = new AutoExpiryService();
+export const autoExpiryService = createAutoExpiryService();
