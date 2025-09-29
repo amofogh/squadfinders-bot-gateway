@@ -57,7 +57,8 @@ export const playerController = {
     // Find active players excluding those with message_ids in seen list
     const players = await Player.find({
       active: true,
-      message_id: { $nin: seenMessageIds }
+      message_id: { $nin: seenMessageIds },
+      'sender.id': { $ne: user_id }
     })
     .sort({ message_date: -1 })
     .limit(maxLimit);

@@ -52,9 +52,40 @@ export const userSeenController = {
 
   // Create new user seen record
   create: handleAsyncError(async (req, res) => {
-    const record = new UserSeen(req.body);
-    await record.save();
-    res.status(201).json(record);
+    const { user_id, username, message_ids = [] } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Check if user_seen record already exists
+    let record = await UserSeen.findOne({ user_id });
+
+    if (record) {
+      // User exists, append new message_ids without duplicates
+      const existingIds = new Set(record.message_ids);
+      const newIds = message_ids.filter(id => !existingIds.has(id));
+
+      if (newIds.length > 0) {
+        record.message_ids.push(...newIds);
+        if (username) record.username = username;
+        record.active = true; // Ensure it's active when updated
+        await record.save();
+      }
+
+      return res.status(200).json(record);
+    } else {
+      // Create new record
+      const uniqueMessageIds = [...new Set(message_ids)]; // Remove duplicates from input
+      record = new UserSeen({
+        user_id,
+        username,
+        message_ids: uniqueMessageIds,
+        active: true
+      });
+      await record.save();
+      return res.status(201).json(record);
+    }
   }),
 
   // Update user seen record

@@ -23,5 +23,6 @@ router.use('/gaming-groups', gamingGroupRoutes);
 router.use('/canceled-users', canceledUserRoutes);
 router.use('/user-messages', userMessageRoutes);
 router.use('/user-seen', userSeenRoutes);
+app.get('/health', (req, res) => res.json({ ok: true }));
 
 export default router;
