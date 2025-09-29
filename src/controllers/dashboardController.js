@@ -29,6 +29,52 @@ const parseTimeframe = (timeframe) => {
   return new Date(Date.now() - milliseconds);
 };
 
+const TEHRAN_TIMEZONE = 'Asia/Tehran';
+
+const formatDateInTimezone = (date, timeZone = TEHRAN_TIMEZONE) => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'shortOffset'
+  });
+
+  const parts = formatter.formatToParts(date).reduce((acc, part) => {
+    if (part.type !== 'literal') {
+      acc[part.type] = part.value;
+    }
+    return acc;
+  }, {});
+
+  let offset = parts.timeZoneName ?? '+00:00';
+  offset = offset.replace(/^(GMT|UTC)/, '');
+
+  if (!offset) {
+    offset = '+00:00';
+  }
+
+  if (!offset.startsWith('+') && !offset.startsWith('-')) {
+    offset = `+${offset}`;
+  }
+
+  if (/^[+-]\d{2}$/.test(offset)) {
+    offset = `${offset}:00`;
+  } else if (/^[+-]\d:\d{2}$/.test(offset)) {
+    const sign = offset[0];
+    const [hours, minutes] = offset.slice(1).split(':');
+    offset = `${sign}${hours.padStart(2, '0')}:${minutes}`;
+  } else if (/^[+-]\d{4}$/.test(offset)) {
+    offset = offset.replace(/([+-]\d{2})(\d{2})/, '$1:$2');
+  }
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}${offset}`;
+};
+
 export const dashboardController = {
   // Get dashboard statistics
   getStats: handleAsyncError(async (req, res) => {
@@ -53,13 +99,14 @@ export const dashboardController = {
     ]);
 
     // AI Status counts (all time) - added processingMessages back for old dashboard
-    const [pendingMessages, processingMessages, completedMessages, failedMessages, expiredMessages, pendingPrefilterMessages] = await Promise.all([
+    const [pendingMessages, processingMessages, completedMessages, failedMessages, expiredMessages, pendingPrefilterMessages, canceledByUserMessages] = await Promise.all([
       Message.countDocuments({ ai_status: 'pending', is_valid: true }),
       Message.countDocuments({ ai_status: 'processing' }),
       Message.countDocuments({ ai_status: 'completed' }),
       Message.countDocuments({ ai_status: 'failed' }),
       Message.countDocuments({ ai_status: 'expired' }),
-      Message.countDocuments({ ai_status: 'pending_prefilter' })
+      Message.countDocuments({ ai_status: 'pending_prefilter' }),
+      Message.countDocuments({ ai_status: 'canceled_by_user' })
     ]);
 
     // Calculate messages per minute for the selected time range
@@ -98,6 +145,7 @@ export const dashboardController = {
         failedMessages,
         expiredMessages,
         pendingPrefilterMessages,
+        canceledByUserMessages,
         messagesPerMinute: timeRangeMinutes > 0 ? Math.round(messagesInRange / timeRangeMinutes * 100) / 100 : 0,
         validMessagesPerMinute: timeRangeMinutes > 0 ? Math.round(validMessagesInRange / timeRangeMinutes * 100) / 100 : 0,
         messagesToday: messagesForTimeRange,
@@ -112,22 +160,13 @@ export const dashboardController = {
     const { timeframe = '24h' } = req.query;
     const startDate = parseTimeframe(timeframe);
 
-    // Determine the appropriate grouping based on the timeframe
-    let groupBy = {
-        year: { $year: '$message_date' },
-        month: { $month: '$message_date' },
-        day: { $dayOfMonth: '$message_date' },
-        hour: { $hour: '$message_date' },
-        minute: { $minute: '$message_date' },
-    };
-
     const durationInDays = (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    let truncateUnit = 'minute';
 
-    if (durationInDays > 30) { // If more than a month, group by day
-      delete groupBy.hour;
-      delete groupBy.minute;
-    } else if (durationInDays > 2) { // If more than 2 days, group by hour
-      delete groupBy.minute;
+    if (durationInDays > 30) {
+      truncateUnit = 'day';
+    } else if (durationInDays > 2) {
+      truncateUnit = 'hour';
     }
 
     const messages = await Message.aggregate([
@@ -136,7 +175,13 @@ export const dashboardController = {
       },
       {
         $group: {
-          _id: groupBy,
+          _id: {
+            $dateTrunc: {
+              date: '$message_date',
+              unit: truncateUnit,
+              timezone: TEHRAN_TIMEZONE
+            }
+          },
           totalMessages: { $sum: 1 },
           validMessages: {
             $sum: { $cond: ['$is_valid', 1, 0] }
@@ -147,18 +192,12 @@ export const dashboardController = {
         }
       },
       {
-        $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.hour': 1, '_id.minute': 1 }
+        $sort: { '_id': 1 }
       }
     ]);
 
     const formattedData = messages.map(item => ({
-      date: new Date(
-        item._id.year,
-        item._id.month - 1,
-        item._id.day,
-        item._id.hour || 0,
-        item._id.minute || 0
-      ).toISOString(),
+      date: formatDateInTimezone(item._id),
       totalCount: item.totalMessages,
       validCount: item.validMessages,
       lfgCount: item.lfgMessages,

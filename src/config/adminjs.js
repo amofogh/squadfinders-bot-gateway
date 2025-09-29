@@ -168,6 +168,7 @@ export const adminJS = new AdminJS({
               { value: 'failed', label: 'Failed' },
               { value: 'expired', label: 'Expired' },
               { value: 'pending_prefilter', label: 'Pending Prefilter' },
+              { value: 'canceled_by_user', label: 'Canceled by User' },
             ],
           },
         },

@@ -1,5 +1,5 @@
 import { Message } from '../models/Message.js';
-import { DeletedMessageStats, DailyDeletion } from '../models/index.js';
+import { DeletedMessageStats, DailyDeletion, CanceledUser } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';
@@ -355,7 +355,33 @@ export const messageController = {
       }
     }
     
-    const newMessage = new Message(req.body);
+    const messageData = { ...req.body };
+
+    if (sender?.id || sender?.username) {
+      const cancellationQuery = [];
+      if (sender?.id) {
+        cancellationQuery.push({ user_id: sender.id });
+      }
+      if (sender?.username) {
+        cancellationQuery.push({ username: sender.username });
+      }
+
+      if (cancellationQuery.length > 0) {
+        const canceledUser = await CanceledUser.findOne({ $or: cancellationQuery });
+
+        if (canceledUser) {
+          messageLogger.info('Message belongs to canceled user, overriding status', {
+            senderId: sender?.id,
+            senderUsername: sender?.username,
+            messageId: messageData.message_id
+          });
+
+          messageData.ai_status = 'canceled_by_user';
+        }
+      }
+    }
+
+    const newMessage = new Message(messageData);
     await newMessage.save();
     
     messageLogger.info('Message created successfully', {

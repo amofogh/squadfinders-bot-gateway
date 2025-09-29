@@ -35,7 +35,7 @@ const DeletedMessageSchema = new mongoose.Schema({
   reason: { type: String, default: null },
   ai_status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed', 'expired', 'pending_prefilter'],
+    enum: ['pending', 'processing', 'completed', 'failed', 'expired', 'pending_prefilter', 'canceled_by_user'],
     default: 'pending_prefilter'
   }
 }, {

@@ -1,4 +1,4 @@
-import { Player } from '../models/index.js';
+import { Player, CanceledUser } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
@@ -91,7 +91,29 @@ export const playerController = {
   // Create new player
   create: handleAsyncError(async (req, res) => {
     const { sender, group } = req.body;
-    
+
+    if (sender?.id || sender?.username) {
+      const cancellationQuery = [];
+      if (sender?.id) {
+        cancellationQuery.push({ user_id: sender.id });
+      }
+      if (sender?.username) {
+        cancellationQuery.push({ username: sender.username });
+      }
+
+      if (cancellationQuery.length > 0) {
+        const canceledUser = await CanceledUser.findOne({ $or: cancellationQuery });
+
+        if (canceledUser) {
+          return res.status(409).json({
+            error: 'Cannot create player for a canceled user',
+            user_id: sender?.id || null,
+            username: sender?.username || null
+          });
+        }
+      }
+    }
+
     // Check if sender and group information is provided
     if (sender && sender.id && group && group.group_id) {
       // Deactivate all existing active players for this sender in this group
