@@ -73,7 +73,8 @@ export const playerController = {
     // Find active players excluding those with message_ids in seen list
     const players = await Player.find({
       active: true,
-      message_id: { $nin: seenMessageIds }
+      message_id: { $nin: seenMessageIds },
+      'sender.id': { $ne: user_id }
     })
     .sort({ message_date: -1 })
     .limit(maxLimit);
@@ -114,6 +115,7 @@ export const playerController = {
       groupUsername: group?.group_username
     });
 
+
     if (sender?.id || sender?.username) {
       const cancellationQuery = [];
       if (sender?.id) {
@@ -131,6 +133,7 @@ export const playerController = {
             senderId: sender?.id,
             senderUsername: sender?.username
           });
+
           return res.status(409).json({
             error: 'Cannot create player for a canceled user',
             user_id: sender?.id || null,

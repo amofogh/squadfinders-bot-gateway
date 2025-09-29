@@ -93,6 +93,7 @@ export const canceledUserController = {
     const user = new CanceledUser(req.body);
     await user.save();
 
+
     canceledUserLogger.info('Created canceled user entry', {
       userId: user_id,
       username
@@ -136,6 +137,7 @@ export const canceledUserController = {
       messagesCanceled,
       playersDeactivated
     });
+
 
     res.status(201).json({
       ...user.toObject(),

@@ -174,6 +174,7 @@ export const dashboardController = {
 
     dashboardLogger.info('Fetching messages chart data', { timeframe, startDate: startDate.toISOString() });
 
+
     const durationInDays = (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24);
     let truncateUnit = 'minute';
 
