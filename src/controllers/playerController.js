@@ -1,21 +1,31 @@
-import { Player } from '../models/index.js';
+import { Player, CanceledUser } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { createServiceLogger } from '../utils/logger.js';
 import createCsvWriter from 'csv-writer';
 import { promises as fs } from 'fs';
 import path from 'path';
+
+const playerLogger = createServiceLogger('player-controller');
 
 export const playerController = {
   // Get all players with filtering and pagination
   getAll: handleAsyncError(async (req, res) => {
     const { active, platform, page = 1, limit = 100 } = req.query;
     const query = {};
-    
+
     if (active !== undefined) query.active = active === 'true';
     if (platform) query.platform = platform;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    playerLogger.info('Fetching players', {
+      active,
+      platform,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
     
     const [players, total] = await Promise.all([
       Player.find(query)
@@ -45,6 +55,12 @@ export const playerController = {
     }
 
     const maxLimit = Math.min(parseInt(limit), 100);
+
+    playerLogger.info('Fetching players for squad', {
+      userId: user_id,
+      requestedLimit: limit,
+      resolvedLimit: maxLimit
+    });
     
     // Get user's seen message IDs
     const userSeen = await UserSeen.findOne({ 
@@ -90,11 +106,44 @@ export const playerController = {
   // Create new player
   create: handleAsyncError(async (req, res) => {
     const { sender, group } = req.body;
-    
+
+    playerLogger.info('Attempting to create player', {
+      senderId: sender?.id,
+      senderUsername: sender?.username,
+      groupId: group?.group_id,
+      groupUsername: group?.group_username
+    });
+
+    if (sender?.id || sender?.username) {
+      const cancellationQuery = [];
+      if (sender?.id) {
+        cancellationQuery.push({ user_id: sender.id });
+      }
+      if (sender?.username) {
+        cancellationQuery.push({ username: sender.username });
+      }
+
+      if (cancellationQuery.length > 0) {
+        const canceledUser = await CanceledUser.findOne({ $or: cancellationQuery });
+
+        if (canceledUser) {
+          playerLogger.warn('Blocked player creation for canceled user', {
+            senderId: sender?.id,
+            senderUsername: sender?.username
+          });
+          return res.status(409).json({
+            error: 'Cannot create player for a canceled user',
+            user_id: sender?.id || null,
+            username: sender?.username || null
+          });
+        }
+      }
+    }
+
     // Check if sender and group information is provided
     if (sender && sender.id && group && group.group_id) {
       // Deactivate all existing active players for this sender in this group
-      await Player.updateMany(
+      const updateResult = await Player.updateMany(
         {
           'sender.id': sender.id,
           'group.group_id': group.group_id,
@@ -104,13 +153,24 @@ export const playerController = {
           $set: { active: false }
         }
       );
-      
-      console.log(`Deactivated existing players for sender ${sender.id} in group ${group.group_id}`);
+
+      playerLogger.info('Deactivated existing players for sender in group', {
+        senderId: sender.id,
+        groupId: group.group_id,
+        deactivatedCount: updateResult.modifiedCount || 0
+      });
     }
-    
+
     const player = new Player(req.body);
     player.active = true;
     await player.save();
+
+    playerLogger.info('Player created successfully', {
+      playerId: player._id.toString(),
+      messageId: player.message_id,
+      senderId: sender?.id,
+      groupId: group?.group_id
+    });
     res.status(201).json(player);
   }),
 
@@ -133,8 +193,14 @@ export const playerController = {
     }
 
     if (!player) {
+      playerLogger.warn('Player not found for update', { id });
       return res.status(404).json({ error: 'Player not found' });
     }
+
+    playerLogger.info('Player updated successfully', {
+      id,
+      playerId: player._id.toString()
+    });
 
     res.json(player);
   }),
@@ -151,8 +217,14 @@ export const playerController = {
     }
 
     if (!player) {
+      playerLogger.warn('Player not found for deletion', { id });
       return res.status(404).json({ error: 'Player not found' });
     }
+
+    playerLogger.info('Player deleted successfully', {
+      id,
+      playerId: player._id.toString()
+    });
 
     res.json({ message: 'Player deleted successfully' });
   })

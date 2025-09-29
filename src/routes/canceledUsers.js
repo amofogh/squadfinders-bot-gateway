@@ -178,7 +178,7 @@ router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), can
 
 /**
  * @swagger
- * /api/canceled-users/{id}:
+ * /api/canceled-users/{user_id}:
  *   delete:
  *     summary: Delete canceled user (Admin only)
  *     tags: [Canceled Users]
@@ -186,14 +186,15 @@ router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), can
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Unique identifier of the user to delete
  *     responses:
  *       200:
  *         description: Canceled user deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.delete);
+router.delete('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.delete);
 
 export default router;

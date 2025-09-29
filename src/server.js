@@ -100,19 +100,9 @@ app.use(
   })
 );
 
-// Root route
-app.get('/', authMiddleware, (req, res) => {
-  res.json({
-    message: 'SquadFinders Bot Gateway API',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: {
-      admin: `${req.protocol}://${req.get('host')}/admin`,
-      api: `${req.protocol}://${req.get('host')}/api`,
-      docs: `${req.protocol}://${req.get('host')}/docs`,
-    },
-    note: 'API endpoints require basic authentication',
-  });
+// Public health check
+app.get('/', (req, res) => {
+  res.type('text/plain').send('healthy');
 });
 
 // Error handling middleware (must be last)

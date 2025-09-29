@@ -64,7 +64,7 @@ export class AutoExpiryService {
   // Update expiry time
   setExpiryMinutes(minutes) {
     this.expiryMinutes = minutes;
-    console.log(`⏰ Auto-expiry time updated to ${minutes} minutes`);
+    logAutoExpiry('Expiry minutes updated', { minutes });
   }
 
   // Expire messages older than configured minutes that are still pending
