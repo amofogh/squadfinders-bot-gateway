@@ -1,6 +1,9 @@
 import { CanceledUser, Message, Player } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
+import { createServiceLogger } from '../utils/logger.js';
+
+const canceledUserLogger = createServiceLogger('canceled-user-controller');
 
 export const canceledUserController = {
   // Get all canceled users with pagination
@@ -12,6 +15,12 @@ export const canceledUserController = {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
+    canceledUserLogger.info('Fetching canceled users', {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      username
+    });
+
     const [users, total] = await Promise.all([
       CanceledUser.find(query)
         .sort({ createdAt: -1 })
@@ -84,6 +93,12 @@ export const canceledUserController = {
     const user = new CanceledUser(req.body);
     await user.save();
 
+
+    canceledUserLogger.info('Created canceled user entry', {
+      userId: user_id,
+      username
+    });
+
     const messageStatusFilter = { ai_status: { $in: ['pending', 'pending_prefilter'] } };
     const messageUserConditions = [];
     const playerUserConditions = [];
@@ -116,6 +131,14 @@ export const canceledUserController = {
       playersDeactivated = playerUpdateResult.modifiedCount || 0;
     }
 
+    canceledUserLogger.info('Applied cancellation cascade', {
+      userId: user_id,
+      username,
+      messagesCanceled,
+      playersDeactivated
+    });
+
+
     res.status(201).json({
       ...user.toObject(),
       updates: {
@@ -142,6 +165,11 @@ export const canceledUserController = {
       return res.status(404).json({ error: 'Canceled user not found' });
     }
 
+    canceledUserLogger.info('Updated canceled user', {
+      id,
+      userId: user.user_id
+    });
+
     res.json(user);
   }),
 
@@ -158,6 +186,11 @@ export const canceledUserController = {
     if (!user) {
       return res.status(404).json({ error: 'Canceled user not found' });
     }
+
+    canceledUserLogger.info('Deleted canceled user', {
+      userId: user_id,
+      username: user.username
+    });
 
     res.json({ message: 'Canceled user deleted successfully' });
   })

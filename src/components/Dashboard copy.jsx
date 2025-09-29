@@ -165,21 +165,54 @@ const Dashboard = (props) => {
           'failed': { label: 'Failed', color: '#ff6b6b' },
           'expired': { label: 'Expired', color: '#a8a8a8' },
           'pending_prefilter': { label: 'Pending Prefilter', color: '#9c88ff' },
+          'canceled_by_user': { label: 'Canceled by User', color: '#ffa94d' },
           'unknown': { label: 'Unknown', color: '#cccccc' }
         };
-        
+
+        const statusOrder = [
+          'pending',
+          'processing',
+          'completed',
+          'failed',
+          'expired',
+          'pending_prefilter',
+          'canceled_by_user',
+          'unknown'
+        ];
+
+        const distributionByStatus = aiStatusDistribution.reduce((acc, item) => {
+          const status = item._id || 'unknown';
+          acc[status] = (acc[status] || 0) + item.count;
+          return acc;
+        }, {});
+
         const labels = [];
         const colors = [];
         const data = [];
-        
-        aiStatusDistribution.forEach(item => {
-          const status = item._id;
+
+        statusOrder.forEach(status => {
+          const count = distributionByStatus[status];
+
+          if (count) {
+            const config = statusConfig[status] || { label: 'Other', color: '#999999' };
+            labels.push(config.label);
+            colors.push(config.color);
+            data.push(count);
+            delete distributionByStatus[status];
+          }
+        });
+
+        Object.entries(distributionByStatus).forEach(([status, count]) => {
+          if (!count) {
+            return;
+          }
+
           const config = statusConfig[status] || { label: 'Other', color: '#999999' };
           labels.push(config.label);
           colors.push(config.color);
-          data.push(item.count);
+          data.push(count);
         });
-        
+
         new window.Chart(aiStatusCtx, {
             type: 'doughnut',
             data: {
@@ -441,6 +474,7 @@ const Dashboard = (props) => {
       React.createElement(StatBox, { key: 'failedMessages', title: 'Failed Messages', value: stats?.failedMessages || 0, color: '#ff6b6b', icon: '❌' }),
       React.createElement(StatBox, { key: 'expiredMessages', title: 'Expired Messages', value: stats?.expiredMessages || 0, color: '#a8a8a8', icon: '⏰' }),
       React.createElement(StatBox, { key: 'pendingPrefilterMessages', title: 'Pending Prefilter', value: stats?.pendingPrefilterMessages || 0, color: '#9c88ff', icon: '🔍' }),
+      React.createElement(StatBox, { key: 'canceledByUserMessages', title: 'Canceled by User', value: stats?.canceledByUserMessages || 0, color: '#ffa94d', icon: '🚫' }),
       React.createElement(StatBox, { key: 'messagesToday', title: 'Messages Today', value: stats?.messagesToday || 0, color: '#38ef7d', icon: '📅' }),
       React.createElement(StatBox, { key: 'validMessagesToday', title: 'Valid Today', value: stats?.validMessagesToday || 0, color: '#a8edea', icon: '✨' }),
       React.createElement(StatBox, { key: 'messagesPerMin', title: 'Messages/Min', value: stats?.messagesPerMinute || 0, color: '#667eea', icon: '⚡', isDecimal: true }),

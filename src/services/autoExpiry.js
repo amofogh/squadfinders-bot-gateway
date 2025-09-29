@@ -26,6 +26,58 @@ export class AutoExpiryService {
             return;
         }
 
+  // Enable/disable the service
+  setEnabled(enabled) {
+    this.enabled = enabled;
+    if (!enabled && this.isRunning) {
+      this.stop();
+    }
+  }
+
+  // Update expiry time
+  setExpiryMinutes(minutes) {
+    this.expiryMinutes = minutes;
+    logAutoExpiry('Expiry minutes updated', { minutes });
+  }
+
+  // Expire messages older than configured minutes that are still pending
+  async expireOldMessages() {
+    if (!this.enabled) return;
+
+    try {
+      logAutoExpiry('Starting expiry check', {
+        expiryMinutes: this.expiryMinutes,
+        cutoffTime: new Date(Date.now() - this.expiryMinutes * 60 * 1000).toISOString()
+      });
+
+      const expiryTime = new Date(Date.now() - this.expiryMinutes * 60 * 1000);
+      
+      // First, count messages that will be expired
+      const messagesToExpireCount = await Message.countDocuments({
+        ai_status: { $in: ['pending', 'pending_prefilter', 'processing'] },
+        message_date: { $lt: expiryTime }
+      });
+
+      if (messagesToExpireCount > 0) {
+        // Get sample of messages for logging
+        const sampleMessages = await Message.find({
+          ai_status: { $in: ['pending', 'pending_prefilter', 'processing'] },
+          message_date: { $lt: expiryTime }
+        })
+        .select('message_id message_date ai_status')
+        .limit(10)
+        .lean();
+
+        logAutoExpiry('Found messages to expire', {
+          totalCount: messagesToExpireCount,
+          expiryTime: expiryTime.toISOString(),
+          sampleMessages: sampleMessages.map(m => ({
+            messageId: m.message_id,
+            messageDate: m.message_date.toISOString(),
+            aiStatus: m.ai_status,
+            ageMinutes: Math.round((Date.now() - m.message_date.getTime()) / (1000 * 60))
+          }))
+          
         const interval = intervalMinutes || this.intervalMinutes;
         logAutoExpiry('Service starting', {
             intervalMinutes: interval,

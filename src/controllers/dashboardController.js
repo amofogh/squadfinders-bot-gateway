@@ -1,6 +1,7 @@
-import { Player, Message, AdminUser, DailyDeletion  } from '../models/index.js';
+import { Player, Message, AdminUser, DailyDeletion, DeletedMessage } from '../models/index.js';
 import { DeletedMessageStats } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
+import { createServiceLogger } from '../utils/logger.js';
 
 // Helper function to parse timeframe string (e.g., '60m', '12h', '7d')
 const parseTimeframe = (timeframe) => {
@@ -30,6 +31,8 @@ const parseTimeframe = (timeframe) => {
 };
 
 const TEHRAN_TIMEZONE = 'Asia/Tehran';
+
+const dashboardLogger = createServiceLogger('dashboard-controller');
 
 const formatDateInTimezone = (date, timeZone = TEHRAN_TIMEZONE) => {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -81,6 +84,8 @@ export const dashboardController = {
     const { timeRange = '24h' } = req.query;
     const startDate = parseTimeframe(timeRange);
 
+    dashboardLogger.info('Fetching dashboard stats', { timeRange, startDate: startDate.toISOString() });
+
     const [playerCount, messageCount, adminUserCount] = await Promise.all([
       Player.countDocuments(),
       Message.countDocuments(),
@@ -128,7 +133,7 @@ export const dashboardController = {
       Message.countDocuments({ message_date: { $gte: startDate }, is_valid: true })
     ]);
 
-    res.json({
+    const responsePayload = {
       counts: {
         players: playerCount,
         messages: messageCount,
@@ -152,13 +157,23 @@ export const dashboardController = {
         validMessagesToday: validMessagesForTimeRange,
         deletedToday: deletionStats?.deletedToday || 0
       }
+    };
+
+    dashboardLogger.info('Dashboard stats computed', {
+      timeRange,
+      counts: responsePayload.counts
     });
+
+    res.json(responsePayload);
   }),
 
   // Get messages over time for charts
   getMessagesChartData: handleAsyncError(async (req, res) => {
     const { timeframe = '24h' } = req.query;
     const startDate = parseTimeframe(timeframe);
+
+    dashboardLogger.info('Fetching messages chart data', { timeframe, startDate: startDate.toISOString() });
+
 
     const durationInDays = (Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24);
     let truncateUnit = 'minute';
@@ -203,11 +218,18 @@ export const dashboardController = {
       lfgCount: item.lfgMessages,
     }));
 
+    dashboardLogger.info('Messages chart data generated', {
+      timeframe,
+      points: formattedData.length
+    });
+
     res.json(formattedData);
   }),
 
   // Get platform distribution
   getPlatformDistribution: handleAsyncError(async (req, res) => {
+    dashboardLogger.info('Fetching platform distribution');
+
     const distribution = await Player.aggregate([
       {
         $group: {
@@ -217,6 +239,8 @@ export const dashboardController = {
       }
     ]);
 
+    dashboardLogger.info('Platform distribution computed', { segments: distribution.length });
+
     res.json(distribution);
   }),
 
@@ -224,6 +248,8 @@ export const dashboardController = {
   getDeletedMessagesChartData: handleAsyncError(async (req, res) => {
     const { timeframe = '7d' } = req.query;
     const startDate = parseTimeframe(timeframe);
+
+    dashboardLogger.info('Fetching deleted messages chart data', { timeframe, startDate: startDate.toISOString() });
 
     const deletedMessages = await DeletedMessage.aggregate([
       {
@@ -251,6 +277,11 @@ export const dashboardController = {
       avgDeletionTimeMinutes: Math.round(item.avgDeletionTime * 100) / 100
     }));
 
+    dashboardLogger.info('Deleted messages chart data generated', {
+      timeframe,
+      points: formattedData.length
+    });
+
     res.json(formattedData);
   }),
 
@@ -258,6 +289,8 @@ export const dashboardController = {
   getAIStatusDistribution: handleAsyncError(async (req, res) => {
     const { timeRange = '24h' } = req.query;
     const startDate = parseTimeframe(timeRange);
+
+    dashboardLogger.info('Fetching AI status distribution', { timeRange, startDate: startDate.toISOString() });
 
     const distribution = await Message.aggregate([
       {
@@ -280,6 +313,11 @@ export const dashboardController = {
       distribution.push({ _id: 'unknown', count: unknownCount });
     }
     
+    dashboardLogger.info('AI status distribution generated', {
+      timeRange,
+      statuses: distribution.length
+    });
+
     res.json(distribution);
   }),
 };
