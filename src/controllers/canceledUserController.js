@@ -1,4 +1,4 @@
-import { CanceledUser } from '../models/index.js';
+import { CanceledUser, Message, Player } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
 
@@ -70,9 +70,59 @@ export const canceledUserController = {
 
   // Create new canceled user
   create: handleAsyncError(async (req, res) => {
+    const { user_id, username } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const existing = await CanceledUser.findOne({ user_id });
+    if (existing) {
+      return res.status(409).json({ error: 'User is already marked as canceled', user_id });
+    }
+
     const user = new CanceledUser(req.body);
     await user.save();
-    res.status(201).json(user);
+
+    const messageStatusFilter = { ai_status: { $in: ['pending', 'pending_prefilter'] } };
+    const messageUserConditions = [];
+    const playerUserConditions = [];
+
+    if (user_id) {
+      messageUserConditions.push({ 'sender.id': user_id });
+      playerUserConditions.push({ 'sender.id': user_id });
+    }
+    if (username) {
+      messageUserConditions.push({ 'sender.username': username });
+      playerUserConditions.push({ 'sender.username': username });
+    }
+
+    let messagesCanceled = 0;
+    if (messageUserConditions.length > 0) {
+      messageStatusFilter.$or = messageUserConditions;
+      const messageUpdateResult = await Message.updateMany(
+        messageStatusFilter,
+        { $set: { ai_status: 'canceled_by_user' } }
+      );
+      messagesCanceled = messageUpdateResult.modifiedCount || 0;
+    }
+
+    let playersDeactivated = 0;
+    if (playerUserConditions.length > 0) {
+      const playerUpdateResult = await Player.updateMany(
+        { $or: playerUserConditions },
+        { $set: { active: false } }
+      );
+      playersDeactivated = playerUpdateResult.modifiedCount || 0;
+    }
+
+    res.status(201).json({
+      ...user.toObject(),
+      updates: {
+        messagesCanceled,
+        playersDeactivated
+      }
+    });
   }),
 
   // Update canceled user
@@ -97,13 +147,13 @@ export const canceledUserController = {
 
   // Delete canceled user
   delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const user = await CanceledUser.findByIdAndDelete(id);
+    const user = await CanceledUser.findOneAndDelete({ user_id });
 
     if (!user) {
       return res.status(404).json({ error: 'Canceled user not found' });
