@@ -1,6 +1,6 @@
 import AdminJS from 'adminjs';
 import * as AdminJSMongoose from '@adminjs/mongoose';
-import { Player, Message, AdminUser } from '../models/index.js';
+import { Player, Message, AdminUser, MessageReaction } from '../models/index.js';
 import { DeletedMessageStats, DailyDeletion } from '../models/index.js';
 import { PrefilterResult } from '../models/index.js';
 import { GamingGroup } from '../models/index.js';
@@ -443,6 +443,56 @@ export const adminJS = new AdminJS({
       }
     },
     {
+      resource: MessageReaction,
+      options: {
+        list: {
+          perPage: DEFAULT_LIST_PER_PAGE,
+        },
+        actions: withDefaultListPerPage({
+          new: { isAccessible: false },
+          edit: { isAccessible: false },
+          delete: { isAccessible: isAdmin },
+          bulkDelete: { isAccessible: isAdmin },
+          list: { isAccessible: true },
+          show: { isAccessible: true },
+        }),
+        navigation: {
+          name: 'Engagement',
+          icon: 'ThumbsUp'
+        },
+        sort: {
+          sortBy: 'reacted_at',
+          direction: 'desc'
+        },
+        listProperties: [
+          'message_id',
+          'user_id',
+          'username',
+          'reaction',
+          'reacted_at',
+          'source'
+        ],
+        filterProperties: [
+          'message_id',
+          'user_id',
+          'reaction',
+          'source',
+          'reacted_at'
+        ],
+        showProperties: [
+          'message_id',
+          'user_id',
+          'username',
+          'reaction',
+          'reacted_at',
+          'source',
+          'metadata',
+          'createdAt',
+          'updatedAt'
+        ]
+      }
+    },
+    {
       resource: AdminUser,
       options: {
         list: {
@@ -502,7 +552,9 @@ export const adminJS = new AdminJS({
           CanceledUser: 'Canceled User',
           canceledUsers: 'Canceled Users',
           UserMessage: 'User Message',
-          userMessages: 'User Messages'
+          userMessages: 'User Messages',
+          MessageReaction: 'Message Reaction',
+          messageReactions: 'Message Reactions'
         }
       }
     }
