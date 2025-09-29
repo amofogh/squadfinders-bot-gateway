@@ -7,6 +7,7 @@ import { GamingGroup } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { CanceledUser, UserMessage } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
+import { config } from './index.js';
 
 // Register AdminJS Mongoose adapter
 AdminJS.registerAdapter(AdminJSMongoose);
@@ -15,32 +16,69 @@ AdminJS.registerAdapter(AdminJSMongoose);
 const isSuperAdmin = ({ currentAdmin }) => currentAdmin && currentAdmin.role === 'superadmin';
 const isAdmin = ({ currentAdmin }) => currentAdmin && ['superadmin', 'admin'].includes(currentAdmin.role);
 
-const viewerRole = {
+const DEFAULT_LIST_PER_PAGE = config.admin.listPerPage;
+
+const ensureListRequestPerPage = (perPage, request = {}) => {
+  const perPageValue = String(perPage);
+  const query = request.query || {};
+
+  if (!query.perPage) {
+    return {
+      ...request,
+      query: {
+        ...query,
+        perPage: perPageValue,
+      },
+    };
+  }
+
+  return request;
+};
+
+const withDefaultListPerPage = (actions, perPage = DEFAULT_LIST_PER_PAGE) => {
+  const listAction = actions?.list || {};
+  const originalBefore = listAction.before;
+
+  return {
+    ...actions,
+    list: {
+      ...listAction,
+      before: async (request, context) => {
+        const requestWithPerPage = ensureListRequestPerPage(perPage, request);
+        return originalBefore
+          ? originalBefore(requestWithPerPage, context)
+          : requestWithPerPage;
+      },
+    },
+  };
+};
+
+const viewerRole = withDefaultListPerPage({
   new: { isAccessible: isSuperAdmin },
   edit: { isAccessible: isSuperAdmin },
   delete: { isAccessible: isSuperAdmin },
   bulkDelete: { isAccessible: isSuperAdmin },
   list: { isAccessible: true },
   show: { isAccessible: true },
-};
+});
 
-const adminRole = {
+const adminRole = withDefaultListPerPage({
   new: { isAccessible: isSuperAdmin },
   edit: { isAccessible: isSuperAdmin },
   delete: { isAccessible: isSuperAdmin },
   bulkDelete: { isAccessible: isSuperAdmin },
   list: { isAccessible: true },
   show: { isAccessible: true },
-};
+});
 
-const superAdminRole = {
+const superAdminRole = withDefaultListPerPage({
   new: { isAccessible: isSuperAdmin },
   edit: { isAccessible: isSuperAdmin },
   delete: { isAccessible: isSuperAdmin },
   bulkDelete: { isAccessible: isSuperAdmin },
   list: { isAccessible: isSuperAdmin },
   show: { isAccessible: isSuperAdmin },
-};
+});
 
 export const adminJS = new AdminJS({
   componentLoader,
@@ -58,7 +96,7 @@ export const adminJS = new AdminJS({
       resource: Player,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: viewerRole,
         navigation: {
@@ -110,7 +148,7 @@ export const adminJS = new AdminJS({
       resource: Message,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: viewerRole,
         navigation: {
@@ -179,14 +217,14 @@ export const adminJS = new AdminJS({
                 name: 'Analytics',
                 icon: 'Archive'
             },
-            actions: {
+            actions: withDefaultListPerPage({
               new: { isAccessible: false },
               edit: { isAccessible: false },
               delete: { isAccessible: isAdmin },
               bulkDelete: { isAccessible: isAdmin },
               list: { isAccessible: true },
               show: { isAccessible: true },
-            },
+            }),
         }
     },
     {
@@ -197,21 +235,21 @@ export const adminJS = new AdminJS({
                 name: 'Analytics',
                 icon: 'Archive'
             },
-            actions: {
+            actions: withDefaultListPerPage({
               new: { isAccessible: false },
               edit: { isAccessible: false },
               delete: { isAccessible: isAdmin },
               bulkDelete: { isAccessible: isAdmin },
               list: { isAccessible: true },
               show: { isAccessible: true },
-            },
+            }),
         }
     },
     {
       resource: PrefilterResult,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: viewerRole,
         navigation: {
@@ -250,7 +288,7 @@ export const adminJS = new AdminJS({
       resource: GamingGroup,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: adminRole,
         navigation: {
@@ -288,16 +326,16 @@ export const adminJS = new AdminJS({
       resource: UserSeen,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
-        actions: {
+        actions: withDefaultListPerPage({
           new: { isAccessible: false },
           edit: { isAccessible: false },
           delete: { isAccessible: false },
           bulkDelete: { isAccessible: false },
           list: { isAccessible: true },
           show: { isAccessible: true },
-        },
+        }),
         navigation: {
           name: 'Game Data',
           icon: 'Eye'
@@ -331,7 +369,7 @@ export const adminJS = new AdminJS({
       resource: CanceledUser,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: adminRole,
         navigation: {
@@ -364,16 +402,16 @@ export const adminJS = new AdminJS({
       resource: UserMessage,
       options: {
         list: {
-          perPage: 50,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
-        actions: {
+        actions: withDefaultListPerPage({
           new: { isAccessible: false },
           edit: { isAccessible: false },
           delete: { isAccessible: false },
           bulkDelete: { isAccessible: false },
           list: { isAccessible: true },
           show: { isAccessible: true },
-        },
+        }),
         navigation: {
           name: 'Game Data',
           icon: 'MessageCircle'
@@ -407,7 +445,7 @@ export const adminJS = new AdminJS({
       resource: AdminUser,
       options: {
         list: {
-            perPage: 50,
+            perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: superAdminRole,
         navigation: {
