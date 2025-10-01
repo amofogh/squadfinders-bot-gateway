@@ -76,6 +76,14 @@ export const userSeenController = {
       
       // Record analytics
       await recordSeen(user_id);
+      
+      // Update username in analytics if provided
+      if (username) {
+        await UserAnalytics.updateOne(
+          { user_id },
+          { $set: { username } }
+        );
+      }
 
       return res.status(200).json(record);
     } else {
