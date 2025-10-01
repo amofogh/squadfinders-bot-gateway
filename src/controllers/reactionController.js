@@ -1,4 +1,5 @@
 import { Reaction } from '../models/Reaction.js';
+import { UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
 import { recordReaction } from '../services/analyticsService.js';

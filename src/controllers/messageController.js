@@ -1,5 +1,5 @@
 import { Message } from '../models/Message.js';
-import { DeletedMessageStats, DailyDeletion, CanceledUser } from '../models/index.js';
+import { DeletedMessageStats, DailyDeletion, CanceledUser, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';

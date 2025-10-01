@@ -1,4 +1,5 @@
 import { UserSeen } from '../models/index.js';
+import { UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
 import { recordSeen } from '../services/analyticsService.js';
@@ -76,14 +77,6 @@ export const userSeenController = {
       
       // Record analytics
       await recordSeen(user_id);
-      
-      // Update username in analytics if provided
-      if (username) {
-        await UserAnalytics.updateOne(
-          { user_id },
-          { $set: { username } }
-        );
-      }
 
       return res.status(200).json(record);
     } else {

@@ -1,5 +1,5 @@
 import { Player, CanceledUser } from '../models/index.js';
-import { UserSeen } from '../models/index.js';
+import { UserSeen, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
 import { createServiceLogger } from '../utils/logger.js';
