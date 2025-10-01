@@ -405,6 +405,40 @@ const Dashboard = (props) => {
     // Header with auto-refresh controls
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}, [
       React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' }}, 'SquadFinders Dashboard'),
+      React.createElement('div', { key: 'nav-links', style: { display: 'flex', gap: '10px' }}, [
+        React.createElement('a', {
+          key: 'user-analytics',
+          href: '/user_analytics',
+          style: {
+            background: '#f093fb',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'background 0.2s ease'
+          },
+          onMouseEnter: (e) => e.target.style.background = '#e879f9',
+          onMouseLeave: (e) => e.target.style.background = '#f093fb'
+        }, '📊 User Analytics'),
+        React.createElement('a', {
+          key: 'main-dashboard',
+          href: '/admin',
+          style: {
+            background: '#667eea',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'background 0.2s ease'
+          },
+          onMouseEnter: (e) => e.target.style.background = '#5a67d8',
+          onMouseLeave: (e) => e.target.style.background = '#667eea'
+        }, '🏠 Main Dashboard')
+      ]),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}, [
         React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}, [
           React.createElement('input', {

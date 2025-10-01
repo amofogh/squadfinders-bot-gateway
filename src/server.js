@@ -16,6 +16,7 @@ import { AdminUser } from './models/index.js';
 import { autoExpiryService } from './services/autoExpiry.js';
 import { cleanupService } from './services/cleanupService.js';
 import logger, { logApiRequest } from './utils/logger.js';
+import { componentLoader } from './config/componentLoader.js';
 
 // Initialize Express app
 const app = express();
@@ -81,6 +82,35 @@ const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
 
 // Mount AdminJS
 app.use(adminJS.options.rootPath, adminRouter);
+
+// User Analytics Dashboard Route
+app.get('/user_analytics', (req, res) => {
+  const componentPath = path.join(process.cwd(), 'src', 'components', 'UserAnalyticsDashboard.jsx');
+  const componentCode = fs.readFileSync(componentPath, 'utf8');
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>User Analytics Dashboard - SquadFinders</title>
+      <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+      <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+      <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+        * { box-sizing: border-box; }
+      </style>
+    </head>
+    <body>
+      <div id="user-analytics-root"></div>
+      <script>
+        ${componentCode.replace('export default UserAnalyticsDashboard;', 'const root = ReactDOM.createRoot(document.getElementById("user-analytics-root")); root.render(React.createElement(UserAnalyticsDashboard));')}
+      </script>
+    </body>
+    </html>
+  `);
+});
 
 // Middleware (MUST come after AdminJS)
 app.use(express.json({ limit: '10mb' }));
