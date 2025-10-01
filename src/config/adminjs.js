@@ -6,6 +6,7 @@ import { PrefilterResult } from '../models/index.js';
 import { GamingGroup } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { CanceledUser, UserMessage } from '../models/index.js';
+import { Reaction, UserAnalytics } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
 import { config } from './index.js';
 
@@ -443,6 +444,114 @@ export const adminJS = new AdminJS({
       }
     },
     {
+      resource: Reaction,
+      options: {
+        list: {
+          perPage: DEFAULT_LIST_PER_PAGE,
+        },
+        actions: withDefaultListPerPage({
+          new: { isAccessible: false },
+          edit: { isAccessible: false },
+          delete: { isAccessible: isAdmin },
+          bulkDelete: { isAccessible: isAdmin },
+          list: { isAccessible: true },
+          show: { isAccessible: true },
+        }),
+        navigation: {
+          name: 'Analytics',
+          icon: 'Heart'
+        },
+        sort: {
+          sortBy: 'at',
+          direction: 'desc'
+        },
+        listProperties: [
+          'user_id',
+          'username',
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'at'
+        ],
+        filterProperties: [
+          'user_id',
+          'username',
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'at'
+        ],
+        showProperties: [
+          'user_id',
+          'username',
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'at',
+          'meta',
+          'createdAt',
+          'updatedAt'
+        ]
+      }
+    },
+    {
+      resource: UserAnalytics,
+      options: {
+        list: {
+          perPage: DEFAULT_LIST_PER_PAGE,
+        },
+        actions: withDefaultListPerPage({
+          new: { isAccessible: false },
+          edit: { isAccessible: isAdmin },
+          delete: { isAccessible: isAdmin },
+          bulkDelete: { isAccessible: isAdmin },
+          list: { isAccessible: true },
+          show: { isAccessible: true },
+        }),
+        navigation: {
+          name: 'Analytics',
+          icon: 'BarChart'
+        },
+        sort: {
+          sortBy: 'updatedAt',
+          direction: 'desc'
+        },
+        listProperties: [
+          'user_id',
+          'username',
+          'is_canceled',
+          'messages.total',
+          'reactions.total',
+          'player.count',
+          'dm.total_sent'
+        ],
+        filterProperties: [
+          'user_id',
+          'username',
+          'is_canceled'
+        ],
+        showProperties: [
+          'user_id',
+          'username',
+          'is_canceled',
+          'last_canceled_at',
+          'last_resumed_at',
+          'dm',
+          'messages',
+          'reactions',
+          'player',
+          'seen',
+          'status_history',
+          'daily',
+          'createdAt',
+          'updatedAt'
+        ]
+      }
+    },
+    {
       resource: AdminUser,
       options: {
         list: {
@@ -502,7 +611,11 @@ export const adminJS = new AdminJS({
           CanceledUser: 'Canceled User',
           canceledUsers: 'Canceled Users',
           UserMessage: 'User Message',
-          userMessages: 'User Messages'
+          userMessages: 'User Messages',
+          Reaction: 'Reaction',
+          reactions: 'Reactions',
+          UserAnalytics: 'User Analytics',
+          userAnalytics: 'User Analytics'
         }
       }
     }

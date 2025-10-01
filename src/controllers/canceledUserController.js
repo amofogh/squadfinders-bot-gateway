@@ -2,6 +2,7 @@ import { CanceledUser, Message, Player } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
 import { createServiceLogger } from '../utils/logger.js';
+import { recordCancel } from '../services/analyticsService.js';
 
 const canceledUserLogger = createServiceLogger('canceled-user-controller');
 
@@ -93,6 +94,12 @@ export const canceledUserController = {
     const user = new CanceledUser(req.body);
     await user.save();
 
+    // Record analytics
+    await recordCancel(user_id, {
+      username,
+      by: 'admin',
+      reason: 'Manual cancellation'
+    });
 
     canceledUserLogger.info('Created canceled user entry', {
       userId: user_id,

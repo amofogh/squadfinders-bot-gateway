@@ -1,6 +1,7 @@
 import { UserSeen } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId } from '../utils/validators.js';
+import { recordSeen } from '../services/analyticsService.js';
 
 export const userSeenController = {
   // Get all user seen records with pagination
@@ -72,6 +73,9 @@ export const userSeenController = {
         record.active = true; // Ensure it's active when updated
         await record.save();
       }
+      
+      // Record analytics
+      await recordSeen(user_id);
 
       return res.status(200).json(record);
     } else {
@@ -84,6 +88,10 @@ export const userSeenController = {
         active: true
       });
       await record.save();
+      
+      // Record analytics
+      await recordSeen(user_id);
+      
       return res.status(201).json(record);
     }
   }),

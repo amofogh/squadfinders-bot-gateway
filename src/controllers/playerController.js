@@ -6,6 +6,7 @@ import { createServiceLogger } from '../utils/logger.js';
 import createCsvWriter from 'csv-writer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { recordPlayer } from '../services/analyticsService.js';
 
 const playerLogger = createServiceLogger('player-controller');
 
@@ -167,6 +168,11 @@ export const playerController = {
     const player = new Player(req.body);
     player.active = true;
     await player.save();
+    
+    // Record analytics
+    if (sender?.id) {
+      await recordPlayer(sender.id, player.message_date);
+    }
 
     playerLogger.info('Player created successfully', {
       playerId: player._id.toString(),

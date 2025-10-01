@@ -4,6 +4,7 @@ import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';
 import { logMessageProcessing, logError, createServiceLogger } from '../utils/logger.js';
+import { recordUserMessage } from '../services/analyticsService.js';
 
 const messageLogger = createServiceLogger('message-controller');
 
@@ -383,6 +384,11 @@ export const messageController = {
 
     const newMessage = new Message(messageData);
     await newMessage.save();
+    
+    // Record analytics
+    if (sender?.id) {
+      await recordUserMessage(sender.id, newMessage.message_date);
+    }
     
     messageLogger.info('Message created successfully', {
       messageId: newMessage.message_id,
