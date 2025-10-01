@@ -172,6 +172,14 @@ export const playerController = {
     // Record analytics
     if (sender?.id) {
       await recordPlayer(sender.id, player.message_date);
+      
+      // Update username in analytics if provided
+      if (sender.username) {
+        await UserAnalytics.updateOne(
+          { user_id: sender.id },
+          { $set: { username: sender.username } }
+        );
+      }
     }
 
     playerLogger.info('Player created successfully', {

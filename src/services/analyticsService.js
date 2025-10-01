@@ -20,7 +20,8 @@ export const recordCancel = async (user_id, meta = {}) => {
         $set: {
           is_canceled: true,
           last_canceled_at: now,
-          username: meta.username || null
+          username: meta.username || null,
+          user_id: user_id
         },
         $push: {
           status_history: {
@@ -56,7 +57,8 @@ export const recordResume = async (user_id, meta = {}) => {
         $set: {
           is_canceled: false,
           last_resumed_at: now,
-          username: meta.username || null
+          username: meta.username || null,
+          user_id: user_id
         },
         $push: {
           status_history: {
@@ -85,7 +87,8 @@ export const recordDmAttempt = async (user_id) => {
     await UserAnalytics.updateOne(
       { user_id },
       {
-        $inc: { 'dm.total_attempts': 1 }
+        $inc: { 'dm.total_attempts': 1 },
+        $set: { user_id: user_id }
       },
       { upsert: true }
     );
@@ -109,7 +112,10 @@ export const recordDmSent = async (user_id, ts = new Date()) => {
       { user_id },
       {
         $inc: { 'dm.total_sent': 1 },
-        $set: { 'dm.last_sent_at': ts }
+        $set: { 
+          'dm.last_sent_at': ts,
+          user_id: user_id
+        }
       },
       { upsert: true }
     );
@@ -152,7 +158,8 @@ export const recordDmSkippedCanceled = async (user_id) => {
     await UserAnalytics.updateOne(
       { user_id },
       {
-        $inc: { 'dm.total_skipped_canceled': 1 }
+        $inc: { 'dm.total_skipped_canceled': 1 },
+        $set: { user_id: user_id }
       },
       { upsert: true }
     );
@@ -199,7 +206,10 @@ export const recordUserMessage = async (user_id, ts = new Date()) => {
     
     const updateDoc = {
       $inc: { 'messages.total': 1 },
-      $set: { 'messages.last_at': ts }
+      $set: { 
+        'messages.last_at': ts,
+        user_id: user_id
+      }
     };
     
     if (isFirstMessage) {
@@ -256,7 +266,10 @@ export const recordReaction = async (user_id, emoji, ts = new Date()) => {
           'reactions.total': 1,
           [`reactions.by_emoji.${emoji}`]: 1
         },
-        $set: { 'reactions.last_at': ts }
+        $set: { 
+          'reactions.last_at': ts,
+          user_id: user_id
+        }
       },
       { upsert: true }
     );
@@ -301,7 +314,10 @@ export const recordPlayer = async (user_id, ts = new Date()) => {
       { user_id },
       {
         $inc: { 'player.count': 1 },
-        $set: { 'player.last_at': ts }
+        $set: { 
+          'player.last_at': ts,
+          user_id: user_id
+        }
       },
       { upsert: true }
     );
@@ -344,7 +360,10 @@ export const recordSeen = async (user_id, ts = new Date()) => {
       { user_id },
       {
         $inc: { 'seen.total': 1 },
-        $set: { 'seen.last_at': ts }
+        $set: { 
+          'seen.last_at': ts,
+          user_id: user_id
+        }
       },
       { upsert: true }
     );

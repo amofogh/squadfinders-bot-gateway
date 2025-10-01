@@ -11,10 +11,13 @@ export const statsController = {
     
     statsLogger.info('Fetching user stats', { user_id: id });
     
-    const userAnalytics = await UserAnalytics.findOne({ user_id: id });
+    let userAnalytics = await UserAnalytics.findOne({ user_id: id });
     
     if (!userAnalytics) {
-      return res.status(404).json({ error: 'User analytics not found' });
+      // Create new analytics record if it doesn't exist
+      userAnalytics = new UserAnalytics({ user_id: id });
+      await userAnalytics.save();
+      statsLogger.info('Created new user analytics record', { user_id: id });
     }
     
     res.json(userAnalytics);

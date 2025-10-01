@@ -388,6 +388,14 @@ export const messageController = {
     // Record analytics
     if (sender?.id) {
       await recordUserMessage(sender.id, newMessage.message_date);
+      
+      // Update username in analytics if provided
+      if (sender.username) {
+        await UserAnalytics.updateOne(
+          { user_id: sender.id },
+          { $set: { username: sender.username } }
+        );
+      }
     }
     
     messageLogger.info('Message created successfully', {

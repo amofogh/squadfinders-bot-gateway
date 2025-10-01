@@ -63,6 +63,14 @@ export const reactionController = {
     // Record analytics
     if (reaction.user_id && reaction.emoji) {
       await recordReaction(reaction.user_id, reaction.emoji, reaction.at);
+      
+      // Update username in analytics if provided
+      if (reaction.username) {
+        await UserAnalytics.updateOne(
+          { user_id: reaction.user_id },
+          { $set: { username: reaction.username } }
+        );
+      }
     }
     
     reactionLogger.info('Reaction created successfully', {
