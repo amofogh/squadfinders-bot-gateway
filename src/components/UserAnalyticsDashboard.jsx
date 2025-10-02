@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+const { useState, useEffect } = React;
 
 const UserAnalyticsDashboard = (props) => {
   const [insights, setInsights] = useState(null);
