@@ -5,11 +5,8 @@ const Dashboard = (props) => {
   const [platformDistribution, setPlatformDistribution] = useState([]);
   const [aiStatusDistribution, setAIStatusDistribution] = useState([]);
   const [messagesChartData, setMessagesChartData] = useState([]);
-  const [deletionChartData, setDeletionChartData] = useState([]);
   const [timeRange, setTimeRange] = useState('24h');
-  const [deletionTimeRange, setDeletionTimeRange] = useState('7d');
   const [messagesChartInstance, setMessagesChartInstance] = useState(null);
-  const [deletionChartInstance, setDeletionChartInstance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -30,16 +27,12 @@ const Dashboard = (props) => {
       // Fetch all data in parallel
       const [
         statsResponse,
-        platformResponse,
         aiStatusResponse,
-        messagesChartResponse,
-        deletionChartResponse
+        messagesChartResponse
       ] = await Promise.all([
         fetch('/api/dashboard/stats', fetchOptions),
-        fetch('/api/dashboard/platform-distribution', fetchOptions),
         fetch('/api/dashboard/ai-status-distribution', fetchOptions),
-        fetch(`/api/dashboard/messages-chart?timeframe=${timeRange}`, fetchOptions),
-        fetch(`/api/deleted-messages/chart?timeframe=${deletionTimeRange}`, fetchOptions)
+        fetch(`/api/dashboard/messages-chart?timeframe=${timeRange}`, fetchOptions)
       ]);
 
       if (!statsResponse.ok) {
@@ -48,9 +41,6 @@ const Dashboard = (props) => {
       const statsData = await statsResponse.json();
       setStats(statsData.counts);
 
-      if (!platformResponse.ok) throw new Error('Failed to fetch platform data');
-      const platformData = await platformResponse.json();
-      setPlatformDistribution(platformData);
 
       if (!aiStatusResponse.ok) throw new Error('Failed to fetch AI status data');
       const aiStatusData = await aiStatusResponse.json();
@@ -60,9 +50,6 @@ const Dashboard = (props) => {
       const chartData = await messagesChartResponse.json();
       setMessagesChartData(chartData);
 
-      if (!deletionChartResponse.ok) throw new Error('Failed to fetch deletion chart data');
-      const deletionData = await deletionChartResponse.json();
-      setDeletionChartData(deletionData);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -77,7 +64,7 @@ const Dashboard = (props) => {
       setLoading(false);
     };
     initialFetch();
-  }, [timeRange, deletionTimeRange]);
+  }, [timeRange]);
 
   // Auto-refresh functionality
   useEffect(() => {
@@ -122,7 +109,7 @@ const Dashboard = (props) => {
 
       loadChartScripts();
     }
-  }, [loading, error, messagesChartData, platformDistribution, aiStatusDistribution, deletionChartData]);
+  }, [loading, error, messagesChartData, aiStatusDistribution]);
 
   const createCharts = () => {
     if (!window.Chart) return;
@@ -371,10 +358,6 @@ const Dashboard = (props) => {
     { label: '6mo', value: '6mo' }, { label: '1y', value: '1y' }
   ];
 
-  const deletionTimeButtons = [
-    { label: '1d', value: '1d' }, { label: '3d', value: '3d' }, { label: '7d', value: '7d' },
-    { label: '14d', value: '14d' }, { label: '30d', value: '30d' }, { label: '3mo', value: '3mo' }
-  ];
 
   const refreshIntervals = [
     { label: '5s', value: 5 },
@@ -422,22 +405,6 @@ const Dashboard = (props) => {
           onMouseEnter: (e) => e.target.style.background = '#e879f9',
           onMouseLeave: (e) => e.target.style.background = '#f093fb'
         }, '📊 User Analytics'),
-        React.createElement('a', {
-          key: 'main-dashboard',
-          href: '/admin',
-          style: {
-            background: '#667eea',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'background 0.2s ease'
-          },
-          onMouseEnter: (e) => e.target.style.background = '#5a67d8',
-          onMouseLeave: (e) => e.target.style.background = '#667eea'
-        }, '🏠 Main Dashboard')
       ]),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}, [
         React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}, [
@@ -479,7 +446,6 @@ const Dashboard = (props) => {
     React.createElement('div', { key: 'stats', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}, [
       React.createElement(StatBox, { key: 'players', title: 'Total Players', value: stats?.players || 0, color: '#667eea', icon: '👥' }),
       React.createElement(StatBox, { key: 'messages', title: 'Total Messages', value: stats?.messages || 0, color: '#764ba2', icon: '💬' }),
-      React.createElement(StatBox, { key: 'validMessages', title: 'Valid Messages', value: stats?.validMessages || 0, color: '#43e97b', icon: '✅' }),
       React.createElement(StatBox, { key: 'lfgMessages', title: 'LFG Messages', value: stats?.lfgMessages || 0, color: '#f093fb', icon: '🎮' }),
       React.createElement(StatBox, { key: 'activePlayers', title: 'Active Players', value: stats?.activePlayers || 0, color: '#00f2fe', icon: '🟢' }),
       React.createElement(StatBox, { key: 'pendingMessages', title: 'Pending Messages', value: stats?.pendingMessages || 0, color: '#ffd93d', icon: '⏳' }),
@@ -490,11 +456,7 @@ const Dashboard = (props) => {
       React.createElement(StatBox, { key: 'pendingPrefilterMessages', title: 'Pending Prefilter', value: stats?.pendingPrefilterMessages || 0, color: '#9c88ff', icon: '🔍' }),
       React.createElement(StatBox, { key: 'canceledByUserMessages', title: 'Canceled by User', value: stats?.canceledByUserMessages || 0, color: '#ffa94d', icon: '🚫' }),
       React.createElement(StatBox, { key: 'messagesToday', title: 'Messages Today', value: stats?.messagesToday || 0, color: '#38ef7d', icon: '📅' }),
-      React.createElement(StatBox, { key: 'validMessagesToday', title: 'Valid Today', value: stats?.validMessagesToday || 0, color: '#a8edea', icon: '✨' }),
       React.createElement(StatBox, { key: 'messagesPerMin', title: 'Messages/Min', value: stats?.messagesPerMinute || 0, color: '#667eea', icon: '⚡', isDecimal: true }),
-      React.createElement(StatBox, { key: 'validMessagesPerMin', title: 'Valid/Min', value: stats?.validMessagesPerMinute || 0, color: '#43e97b', icon: '📈', isDecimal: true }),
-      React.createElement(StatBox, { key: 'deletedMessages', title: 'Total Deleted', value: stats?.deletedMessages || 0, color: '#ff6b6b', icon: '🗑️' }),
-      React.createElement(StatBox, { key: 'deletedToday', title: 'Deleted Today', value: stats?.deletedToday || 0, color: '#ff8a80', icon: '📅' })
     ]),
 
     // Charts Grid
@@ -539,42 +501,10 @@ const Dashboard = (props) => {
         )
       ]),
 
-      // Deletion Rate Chart
-      React.createElement('div', { key: 'deletionChartContainer', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
-        React.createElement('div', { key: 'chart-header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}, [
-          React.createElement('h3', { key: 'title', style: { color: '#333', fontSize: '18px', fontWeight: '600', margin: 0 }}, 'Message Deletion Rate'),
-          React.createElement('div', { key: 'buttons' },
-            deletionTimeButtons.map(btn => React.createElement('button', {
-              key: btn.value,
-              onClick: () => setDeletionTimeRange(btn.value),
-              style: {
-                background: deletionTimeRange === btn.value ? '#ff6b6b' : '#f8f9fa',
-                color: deletionTimeRange === btn.value ? 'white' : '#333',
-                border: '1px solid #e2e8f0',
-                padding: '8px 12px',
-                marginLeft: '5px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }
-            }, btn.label))
-          )
-        ]),
-        React.createElement('div', { key: 'canvas-container', style: { height: '350px', position: 'relative' }},
-          React.createElement('canvas', { id: 'deletionChart', style: { width: '100%', height: '100%' } })
-        )
-      ]),
 
       // Charts Row
-      React.createElement('div', { key: 'chartsRow', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}, [
-        // Platform Distribution Chart
-        React.createElement('div', { key: 'platformChartContainer', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
-          React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' }}, 'Platform Distribution'),
-          React.createElement('div', { key: 'canvas-container', style: { height: '300px', position: 'relative' }},
-            React.createElement('canvas', { id: 'platformChart', style: { width: '100%', height: '100%' } })
-          )
-        ]),
 
+      React.createElement('div', { key: 'chartsRow', style: { display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}, [
         // AI Status Distribution Chart
         React.createElement('div', { key: 'aiStatusChartContainer', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
           React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' }}, 'AI Processing Status'),

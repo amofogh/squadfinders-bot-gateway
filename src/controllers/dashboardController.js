@@ -92,8 +92,6 @@ export const dashboardController = {
       AdminUser.countDocuments()
     ]);
 
-    // Get deletion stats
-    const deletionStats = await DeletedMessageStats.findOne();
 
     const [activePlayers, pcPlayers, consolePlayers, lfgMessages, validMessages] = await Promise.all([
       Player.countDocuments({ active: true }),
@@ -138,7 +136,6 @@ export const dashboardController = {
         players: playerCount,
         messages: messageCount,
         adminUsers: adminUserCount,
-        deletedMessages: deletionStats?.totalDeleted || 0,
         activePlayers,
         pcPlayers,
         consolePlayers,
@@ -152,10 +149,7 @@ export const dashboardController = {
         pendingPrefilterMessages,
         canceledByUserMessages,
         messagesPerMinute: timeRangeMinutes > 0 ? Math.round(messagesInRange / timeRangeMinutes * 100) / 100 : 0,
-        validMessagesPerMinute: timeRangeMinutes > 0 ? Math.round(validMessagesInRange / timeRangeMinutes * 100) / 100 : 0,
-        messagesToday: messagesForTimeRange,
-        validMessagesToday: validMessagesForTimeRange,
-        deletedToday: deletionStats?.deletedToday || 0
+        messagesToday: messagesForTimeRange
       }
     };
 
@@ -226,64 +220,6 @@ export const dashboardController = {
     res.json(formattedData);
   }),
 
-  // Get platform distribution
-  getPlatformDistribution: handleAsyncError(async (req, res) => {
-    dashboardLogger.info('Fetching platform distribution');
-
-    const distribution = await Player.aggregate([
-      {
-        $group: {
-          _id: '$platform',
-          count: { $sum:1 }
-        }
-      }
-    ]);
-
-    dashboardLogger.info('Platform distribution computed', { segments: distribution.length });
-
-    res.json(distribution);
-  }),
-
-  // Get deleted messages chart data
-  getDeletedMessagesChartData: handleAsyncError(async (req, res) => {
-    const { timeframe = '7d' } = req.query;
-    const startDate = parseTimeframe(timeframe);
-
-    dashboardLogger.info('Fetching deleted messages chart data', { timeframe, startDate: startDate.toISOString() });
-
-    const deletedMessages = await DeletedMessage.aggregate([
-      {
-        $match: { deleted_at: { $gte: startDate } }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$deleted_at' },
-            month: { $month: '$deleted_at' },
-            day: { $dayOfMonth: '$deleted_at' }
-          },
-          count: { $sum: 1 },
-          avgDeletionTime: { $avg: '$deletion_time_minutes' }
-        }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 }
-      }
-    ]);
-
-    const formattedData = deletedMessages.map(item => ({
-      date: new Date(item._id.year, item._id.month - 1, item._id.day).toISOString(),
-      count: item.count,
-      avgDeletionTimeMinutes: Math.round(item.avgDeletionTime * 100) / 100
-    }));
-
-    dashboardLogger.info('Deleted messages chart data generated', {
-      timeframe,
-      points: formattedData.length
-    });
-
-    res.json(formattedData);
-  }),
 
   // Get AI status distribution
   getAIStatusDistribution: handleAsyncError(async (req, res) => {

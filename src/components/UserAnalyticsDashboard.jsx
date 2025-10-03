@@ -144,7 +144,7 @@ const UserAnalyticsDashboard = (props) => {
               type: 'time',
               time: {
                 unit: 'day',
-                tooltipFormat: 'PP'
+                tooltipFormat: 'PP pp'
               },
               title: {
                 display: true,
@@ -203,6 +203,24 @@ const UserAnalyticsDashboard = (props) => {
     // Header with auto-refresh controls
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}, [
       React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' }}, 'User Analytics Dashboard'),
+      React.createElement('div', { key: 'nav-links', style: { display: 'flex', gap: '10px' }}, [
+        React.createElement('a', {
+          key: 'main-dashboard',
+          href: '/admin',
+          style: {
+            background: '#667eea',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            transition: 'background 0.2s ease'
+          },
+          onMouseEnter: (e) => e.target.style.background = '#5a67d8',
+          onMouseLeave: (e) => e.target.style.background = '#667eea'
+        }, '🏠 Main Dashboard')
+      ]),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}, [
         React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}, [
           React.createElement('input', {
@@ -302,6 +320,33 @@ const UserAnalyticsDashboard = (props) => {
         subtitle: 'Player events per user',
         isDecimal: true
       })
+      React.createElement(MetricBox, { 
+        key: 'reaction-rate', 
+        title: 'Reaction Rate', 
+        value: `${(((insights?.avg_reacts || 0) / (insights?.avg_msgs || 1)) * 100).toFixed(1)}%`, 
+        color: '#e91e63', 
+        icon: '💖',
+        subtitle: 'Reactions per message',
+        isDecimal: false
+      }),
+      React.createElement(MetricBox, { 
+        key: 'message-rate', 
+        title: 'Message Rate', 
+        value: `${(insights?.avg_msgs || 0).toFixed(1)}/user`, 
+        color: '#2196f3', 
+        icon: '📊',
+        subtitle: 'Average messages per user',
+        isDecimal: false
+      }),
+      React.createElement(MetricBox, { 
+        key: 'dm-rate', 
+        title: 'DM Rate', 
+        value: `${(insights?.avg_dm_sent || 0).toFixed(1)}/user`, 
+        color: '#4caf50', 
+        icon: '📬',
+        subtitle: 'Average DMs sent per user',
+        isDecimal: false
+      })
     ]),
 
     // Daily Activity Chart
@@ -315,21 +360,24 @@ const UserAnalyticsDashboard = (props) => {
     React.createElement('div', { key: 'insights-grid', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}, [
       React.createElement('div', { key: 'engagement-card', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
         React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' }}, 'User Engagement'),
+        React.createElement('p', { key: 'help-text', style: { fontSize: '14px', color: '#666', marginBottom: '20px', fontStyle: 'italic' }}, 
+          'These metrics help understand how users interact with the platform and each other.'
+        ),
         React.createElement('div', { key: 'engagement-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' }}, [
           React.createElement('div', { key: 'msg-react-ratio', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}, [
-            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'Message to Reaction Ratio'),
+            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'Message to Reaction Ratio (how often users react)'),
             React.createElement('span', { key: 'value', style: { fontWeight: 'bold', color: '#4facfe' }}, 
               `1:${((insights?.avg_reacts || 0) / (insights?.avg_msgs || 1)).toFixed(2)}`
             )
           ]),
           React.createElement('div', { key: 'dm-success', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}, [
-            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'DM Success Rate'),
+            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'DM Success Rate (not blocked by cancellation)'),
             React.createElement('span', { key: 'value', style: { fontWeight: 'bold', color: '#43e97b' }}, 
               `${(((insights?.avg_dm_sent || 0) / ((insights?.avg_dm_sent || 0) + (insights?.avg_lost_due_cancel || 0))) * 100 || 0).toFixed(1)}%`
             )
           ]),
           React.createElement('div', { key: 'player-conversion', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}, [
-            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'Player Conversion Rate'),
+            React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#666' }}, 'Player Conversion Rate (messages that become games)'),
             React.createElement('span', { key: 'value', style: { fontWeight: 'bold', color: '#9c88ff' }}, 
               `${(((insights?.avg_player || 0) / (insights?.avg_msgs || 1)) * 100).toFixed(2)}%`
             )

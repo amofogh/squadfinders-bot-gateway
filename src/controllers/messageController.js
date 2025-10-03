@@ -1,5 +1,5 @@
 import { Message } from '../models/Message.js';
-import { DeletedMessageStats, DailyDeletion, CanceledUser, UserAnalytics } from '../models/index.js';
+import { CanceledUser, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { validateObjectId, validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';
@@ -8,38 +8,6 @@ import { recordUserMessage } from '../services/analyticsService.js';
 
 const messageLogger = createServiceLogger('message-controller');
 
-// Helper method to update deletion statistics  
-const updateDeletionStats = async () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Update deletion counts only
-  await Promise.all([
-    // Update overall stats
-    DeletedMessageStats.findOneAndUpdate(
-      {},
-      {
-        $inc: {
-          totalDeleted: 1,
-          deletedToday: 1
-        },
-        $set: { lastResetDate: today }
-      },
-      { upsert: true }
-    ),
-
-    // Update daily stats
-    DailyDeletion.findOneAndUpdate(
-      { date: today },
-      {
-        $inc: {
-          count: 1
-        }
-      },
-      { upsert: true }
-    )
-  ]);
-};
 
 export const messageController = {
   // Get all messages with filtering and pagination
@@ -447,8 +415,6 @@ export const messageController = {
         return res.status(404).json({ error: 'Message not found' });
     }
 
-    // Update deletion statistics
-    await updateDeletionStats();
 
     // Delete the original message
     if (validateObjectId(id)) {

@@ -1,7 +1,6 @@
 import AdminJS from 'adminjs';
 import * as AdminJSMongoose from '@adminjs/mongoose';
 import { Player, Message, AdminUser } from '../models/index.js';
-import { DeletedMessageStats, DailyDeletion } from '../models/index.js';
 import { PrefilterResult } from '../models/index.js';
 import { GamingGroup } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
@@ -212,42 +211,6 @@ export const adminJS = new AdminJS({
       }
     },
     {
-        resource: DeletedMessageStats,
-        options: {
-            name: 'Deletion Stats',
-            parent: {
-                name: 'Analytics',
-                icon: 'Archive'
-            },
-            actions: withDefaultListPerPage({
-              new: { isAccessible: false },
-              edit: { isAccessible: false },
-              delete: { isAccessible: isAdmin },
-              bulkDelete: { isAccessible: isAdmin },
-              list: { isAccessible: true },
-              show: { isAccessible: true },
-            }),
-        }
-    },
-    {
-        resource: DailyDeletion,
-        options: {
-            name: 'Daily Deletions',
-            parent: {
-                name: 'Analytics',
-                icon: 'Archive'
-            },
-            actions: withDefaultListPerPage({
-              new: { isAccessible: false },
-              edit: { isAccessible: false },
-              delete: { isAccessible: isAdmin },
-              bulkDelete: { isAccessible: isAdmin },
-              list: { isAccessible: true },
-              show: { isAccessible: true },
-            }),
-        }
-    },
-    {
       resource: PrefilterResult,
       options: {
         list: {
@@ -255,7 +218,7 @@ export const adminJS = new AdminJS({
         },
         actions: viewerRole,
         navigation: {
-          name: 'Game Data',
+          name: 'AI Results',
           icon: 'Filter'
         },
         sort: {
@@ -294,7 +257,7 @@ export const adminJS = new AdminJS({
         },
         actions: adminRole,
         navigation: {
-          name: 'Game Data',
+          name: 'Settings',
           icon: 'Users'
         },
         sort: {
@@ -339,7 +302,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'Eye'
         },
         sort: {
@@ -375,7 +338,7 @@ export const adminJS = new AdminJS({
         },
         actions: adminRole,
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'UserX'
         },
         sort: {
@@ -415,7 +378,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'MessageCircle'
         },
         sort: {
@@ -458,7 +421,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Analytics',
+          name: 'User Engagement',
           icon: 'Heart'
         },
         sort: {
@@ -512,7 +475,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Analytics',
+          name: 'User Engagement',
           icon: 'BarChart'
         },
         sort: {
@@ -557,7 +520,24 @@ export const adminJS = new AdminJS({
         list: {
             perPage: DEFAULT_LIST_PER_PAGE,
         },
-        actions: superAdminRole,
+        actions: withDefaultListPerPage({
+          new: { isAccessible: isSuperAdmin },
+          edit: { 
+            isAccessible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return false;
+              if (currentAdmin.role === 'superadmin') return true;
+              if (currentAdmin.role === 'admin') {
+                // Admin can edit viewer and admin roles, but not superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            }
+          },
+          delete: { isAccessible: isSuperAdmin },
+          bulkDelete: { isAccessible: isSuperAdmin },
+          list: { isAccessible: isSuperAdmin },
+          show: { isAccessible: isSuperAdmin },
+        }),
         navigation: {
           name: 'Administration',
           icon: 'Shield'
@@ -568,11 +548,31 @@ export const adminJS = new AdminJS({
         },
         properties: {
           role: {
-            isVisible: {
-              list: true,
-              show: true,
-              edit: false,
-              filter: true
+            isVisible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return false;
+              if (currentAdmin.role === 'superadmin') return true;
+              if (currentAdmin.role === 'admin') {
+                // Admin can see/edit role but not change to superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            },
+            availableValues: ({ currentAdmin }) => {
+              if (!currentAdmin) return [];
+              if (currentAdmin.role === 'superadmin') {
+                return [
+                  { value: 'superadmin', label: 'Super Admin' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'viewer', label: 'Viewer' }
+                ];
+              }
+              if (currentAdmin.role === 'admin') {
+                return [
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'viewer', label: 'Viewer' }
+                ];
+              }
+              return [];
             }
           },
           password: {
@@ -602,8 +602,6 @@ export const adminJS = new AdminJS({
           adminUsers: 'Admin Users',
           PrefilterResult: 'Prefilter Result',
           prefilterResults: 'Prefilter Results',
-          DeletedMessageStats: 'Deletion Stats',
-          DailyDeletion: 'Daily Deletions',
           GamingGroup: 'Gaming Group',
           gamingGroups: 'Gaming Groups',
           UserSeen: 'User Seen',
