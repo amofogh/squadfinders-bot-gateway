@@ -572,6 +572,7 @@ export const adminJS = new AdminJS({
               }
               return true;
             },
+            isDisabled: ({ currentAdmin }) => currentAdmin?.role !== 'superadmin',
             availableValues: ({ currentAdmin }) => {
               if (!currentAdmin) return [];
               if (currentAdmin.role === 'superadmin') {
@@ -581,13 +582,10 @@ export const adminJS = new AdminJS({
                   { value: 'viewer', label: 'Viewer' }
                 ];
               }
-              if (currentAdmin.role === 'admin') {
-                return [
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'viewer', label: 'Viewer' }
-                ];
-              }
-              return [];
+              return [
+                { value: 'admin', label: 'Admin' },
+                { value: 'viewer', label: 'Viewer' }
+              ];
             }
           },
           password: {
