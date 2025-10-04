@@ -91,6 +91,16 @@ export const adminJS = new AdminJS({
       };
     }
   },
+  pages: {
+    'user-analytics': {
+      label: 'User Analytics',
+      icon: 'Activity',
+      component: componentLoader.add('UserAnalyticsDashboard', '../components/UserAnalyticsDashboard'),
+      handler: async (request, response, context) => ({
+        currentAdmin: context.currentAdmin
+      })
+    }
+  },
   resources: [
     {
       resource: Player,
@@ -522,21 +532,11 @@ export const adminJS = new AdminJS({
         },
         actions: withDefaultListPerPage({
           new: { isAccessible: isSuperAdmin },
-          edit: { 
-            isAccessible: ({ currentAdmin, record }) => {
-              if (!currentAdmin) return false;
-              if (currentAdmin.role === 'superadmin') return true;
-              if (currentAdmin.role === 'admin') {
-                // Admin can edit viewer and admin roles, but not superadmin
-                return record?.params?.role !== 'superadmin';
-              }
-              return false;
-            }
-          },
+          edit: { isAccessible: isSuperAdmin },
           delete: { isAccessible: isSuperAdmin },
           bulkDelete: { isAccessible: isSuperAdmin },
-          list: { isAccessible: isSuperAdmin },
-          show: { isAccessible: isSuperAdmin },
+          list: { isAccessible: isAdmin },
+          show: { isAccessible: isAdmin },
         }),
         navigation: {
           name: 'Administration',
@@ -548,15 +548,13 @@ export const adminJS = new AdminJS({
         },
         properties: {
           role: {
-            isVisible: ({ currentAdmin, record }) => {
-              if (!currentAdmin) return false;
-              if (currentAdmin.role === 'superadmin') return true;
-              if (currentAdmin.role === 'admin') {
-                // Admin can see/edit role but not change to superadmin
-                return record?.params?.role !== 'superadmin';
-              }
-              return false;
+            isVisible: {
+              list: true,
+              filter: true,
+              show: true,
+              edit: true
             },
+            isDisabled: ({ currentAdmin }) => currentAdmin?.role !== 'superadmin',
             availableValues: ({ currentAdmin }) => {
               if (!currentAdmin) return [];
               if (currentAdmin.role === 'superadmin') {
@@ -566,13 +564,10 @@ export const adminJS = new AdminJS({
                   { value: 'viewer', label: 'Viewer' }
                 ];
               }
-              if (currentAdmin.role === 'admin') {
-                return [
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'viewer', label: 'Viewer' }
-                ];
-              }
-              return [];
+              return [
+                { value: 'admin', label: 'Admin' },
+                { value: 'viewer', label: 'Viewer' }
+              ];
             }
           },
           password: {

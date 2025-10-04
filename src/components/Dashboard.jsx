@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
+const MAIN_DASHBOARD_PATH = '/admin';
+const USER_ANALYTICS_PATH = '/admin/pages/user-analytics';
+
 const Dashboard = (props) => {
   const [stats, setStats] = useState(null);
-  const [platformDistribution, setPlatformDistribution] = useState([]);
   const [aiStatusDistribution, setAIStatusDistribution] = useState([]);
   const [messagesChartData, setMessagesChartData] = useState([]);
   const [timeRange, setTimeRange] = useState('24h');
@@ -114,33 +116,10 @@ const Dashboard = (props) => {
   const createCharts = () => {
     if (!window.Chart) return;
 
-    ['platformChart', 'aiStatusChart', 'messagesChart', 'deletionChart'].forEach(chartId => {
+    ['aiStatusChart', 'messagesChart'].forEach(chartId => {
         const chart = window.Chart.getChart(chartId);
         if (chart) chart.destroy();
     });
-
-    // Platform Distribution Chart
-    const platformCtx = document.getElementById('platformChart');
-    if (platformCtx && platformDistribution.length > 0) {
-        new window.Chart(platformCtx, {
-            type: 'doughnut',
-            data: {
-                labels: platformDistribution.map(item => item._id || 'Unknown'),
-                datasets: [{
-                    data: platformDistribution.map(item => item.count),
-                    backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
-                }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { position: 'bottom' },
-                title: { display: true, text: 'Platform Distribution' }
-              }
-            }
-        });
-    }
 
     // AI Status Distribution Chart with static colors including unknown
     const aiStatusCtx = document.getElementById('aiStatusChart');
@@ -234,17 +213,10 @@ const Dashboard = (props) => {
             tension: 0.4,
             fill: true
           }, {
-            label: 'Valid Messages',
-            data: messagesChartData.map(item => ({ x: new Date(item.date), y: item.validCount })),
-            borderColor: '#43e97b',
-            backgroundColor: 'rgba(67, 233, 123, 0.1)',
-            tension: 0.4,
-            fill: true
-          }, {
             label: 'LFG Messages',
             data: messagesChartData.map(item => ({ x: new Date(item.date), y: item.lfgCount })),
-            borderColor: '#f093fb',
-            backgroundColor: 'rgba(240, 147, 251, 0.1)',
+            borderColor: '#43e97b',
+            backgroundColor: 'rgba(67, 233, 123, 0.1)',
             tension: 0.4,
             fill: true
           }]
@@ -299,53 +271,6 @@ const Dashboard = (props) => {
       setMessagesChartInstance(newChartInstance);
     }
 
-    // Deletion Rate Chart
-    const deletionCtx = document.getElementById('deletionChart');
-    if (deletionCtx && deletionChartData) {
-      const newDeletionChartInstance = new window.Chart(deletionCtx, {
-        type: 'line',
-        data: {
-          datasets: [{
-            label: 'Deleted Messages',
-            data: deletionChartData.map(item => ({ x: new Date(item.date), y: item.count })),
-            borderColor: '#ff6b6b',
-            backgroundColor: 'rgba(255, 107, 107, 0.1)',
-            tension: 0.4,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                tooltipFormat: 'PP'
-              },
-              title: {
-                display: true,
-                text: 'Date'
-              }
-            },
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Deleted Count'
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Message Deletion Rate'
-            }
-          }
-        }
-      });
-      setDeletionChartInstance(newDeletionChartInstance);
-    }
   };
 
   const timeButtons = [
@@ -388,24 +313,6 @@ const Dashboard = (props) => {
     // Header with auto-refresh controls
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}, [
       React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' }}, 'SquadFinders Dashboard'),
-      React.createElement('div', { key: 'nav-links', style: { display: 'flex', gap: '10px' }}, [
-        React.createElement('a', {
-          key: 'user-analytics',
-          href: '/user_analytics',
-          style: {
-            background: '#f093fb',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'background 0.2s ease'
-          },
-          onMouseEnter: (e) => e.target.style.background = '#e879f9',
-          onMouseLeave: (e) => e.target.style.background = '#f093fb'
-        }, '📊 User Analytics'),
-      ]),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}, [
         React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}, [
           React.createElement('input', {
@@ -420,7 +327,7 @@ const Dashboard = (props) => {
         autoRefresh && React.createElement('select', {
           key: 'refresh-interval',
           value: refreshInterval,
-          onChange: (e) => setRefreshInterval(parseInt(e.target.value)),
+          onChange: (e) => setRefreshInterval(parseInt(e.target.value, 10)),
           style: { padding: '6px 10px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '14px' }
         }, refreshIntervals.map(interval =>
           React.createElement('option', { key: interval.value, value: interval.value }, interval.label)
@@ -440,6 +347,24 @@ const Dashboard = (props) => {
           }
         }, '🔄 Refresh')
       ])
+    ]),
+
+    React.createElement('div', { key: 'nav-cards', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}, [
+      React.createElement(NavCard, {
+        key: 'main-dashboard',
+        href: MAIN_DASHBOARD_PATH,
+        label: 'Main Dashboard',
+        description: 'Monitor live message processing and AI status.',
+        icon: '📈',
+        active: true
+      }),
+      React.createElement(NavCard, {
+        key: 'user-analytics',
+        href: USER_ANALYTICS_PATH,
+        label: 'User Analytics',
+        description: 'Explore user engagement and retention trends.',
+        icon: '📊'
+      })
     ]),
 
     // Statistics Grid
@@ -514,6 +439,42 @@ const Dashboard = (props) => {
         ])
       ])
     ])
+  ]);
+};
+
+const NavCard = ({ href, label, description, icon, active = false }) => {
+  const baseStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid #e2e8f0',
+    backgroundColor: active ? '#eef2ff' : 'white',
+    boxShadow: active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)',
+    color: '#1f2937',
+    textDecoration: 'none',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    cursor: 'pointer'
+  };
+
+  return React.createElement('a', {
+    href,
+    style: baseStyle,
+    onMouseEnter: (e) => {
+      const target = e.currentTarget;
+      target.style.transform = 'translateY(-3px)';
+      target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.25)';
+    },
+    onMouseLeave: (e) => {
+      const target = e.currentTarget;
+      target.style.transform = 'translateY(0)';
+      target.style.boxShadow = active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)';
+    }
+  }, [
+    React.createElement('div', { key: 'icon', style: { fontSize: '24px' } }, icon),
+    React.createElement('div', { key: 'label', style: { fontWeight: '600', fontSize: '16px' } }, label),
+    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: '#4b5563' } }, description)
   ]);
 };
 
