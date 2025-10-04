@@ -532,7 +532,17 @@ export const adminJS = new AdminJS({
         },
         actions: withDefaultListPerPage({
           new: { isAccessible: isSuperAdmin },
-          edit: { isAccessible: isSuperAdmin },
+          edit: {
+            isAccessible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return false;
+              if (currentAdmin.role === 'superadmin') return true;
+              if (currentAdmin.role === 'admin') {
+                // Admin can edit viewer and admin roles, but not superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            }
+          },
           delete: { isAccessible: isSuperAdmin },
           bulkDelete: { isAccessible: isSuperAdmin },
           list: { isAccessible: isAdmin },
@@ -553,6 +563,14 @@ export const adminJS = new AdminJS({
               filter: true,
               show: true,
               edit: true
+            },
+            isDisabled: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return true;
+              if (currentAdmin.role === 'superadmin') return false;
+              if (currentAdmin.role === 'admin') {
+                return record?.params?.role === 'superadmin';
+              }
+              return true;
             },
             isDisabled: ({ currentAdmin }) => currentAdmin?.role !== 'superadmin',
             availableValues: ({ currentAdmin }) => {
