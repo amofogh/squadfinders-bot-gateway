@@ -564,27 +564,11 @@ export const adminJS = new AdminJS({
               show: true,
               edit: true
             },
-            availableValues: ({ currentAdmin }) => {
-              if (!currentAdmin) return [];
-              if (currentAdmin.role === 'superadmin') {
-                return [
-                  { value: 'superadmin', label: 'Super Admin' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'viewer', label: 'Viewer' }
-                ];
-              }
-              if (currentAdmin.role === 'admin') {
-                return [
-                  { value: 'superadmin', label: 'Super Admin' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'viewer', label: 'Viewer' }
-                ];
-              }
-              return [
-                { value: 'admin', label: 'Admin' },
-                { value: 'viewer', label: 'Viewer' }
-              ];
-            }
+            availableValues: [
+              { value: 'superadmin', label: 'Super Admin' },
+              { value: 'admin', label: 'Admin' },
+              { value: 'viewer', label: 'Viewer' }
+            ]
           },
           password: {
             isVisible: {
@@ -592,6 +576,29 @@ export const adminJS = new AdminJS({
               show: false,
               edit: true,
               filter: false
+            }
+          }
+        },
+        actions: {
+          ...superAdminRole,
+          edit: {
+            isAccessible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return [];
+              if (currentAdmin.role === 'superadmin') {
+                return true;
+              }
+              if (currentAdmin.role === 'admin') {
+                // Admin can edit viewer and admin roles, but not superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            },
+            before: async (request, { currentAdmin }) => {
+              // Prevent admins from setting role to superadmin
+              if (currentAdmin?.role === 'admin' && request.payload?.role === 'superadmin') {
+                throw new Error('Admins cannot assign superadmin role');
+              }
+              return request;
             }
           }
         }
