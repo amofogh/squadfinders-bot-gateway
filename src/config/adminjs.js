@@ -564,18 +564,16 @@ export const adminJS = new AdminJS({
               show: true,
               edit: true
             },
-            isDisabled: ({ currentAdmin, record }) => {
-              if (!currentAdmin) return true;
-              if (currentAdmin.role === 'superadmin') return false;
-              if (currentAdmin.role === 'admin') {
-                return record?.params?.role === 'superadmin';
-              }
-              return true;
-            },
-            isDisabled: ({ currentAdmin }) => currentAdmin?.role !== 'superadmin',
             availableValues: ({ currentAdmin }) => {
               if (!currentAdmin) return [];
               if (currentAdmin.role === 'superadmin') {
+                return [
+                  { value: 'superadmin', label: 'Super Admin' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'viewer', label: 'Viewer' }
+                ];
+              }
+              if (currentAdmin.role === 'admin') {
                 return [
                   { value: 'superadmin', label: 'Super Admin' },
                   { value: 'admin', label: 'Admin' },
