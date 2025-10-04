@@ -91,6 +91,16 @@ export const adminJS = new AdminJS({
       };
     }
   },
+  pages: {
+    'user-analytics': {
+      label: 'User Analytics',
+      icon: 'Activity',
+      component: componentLoader.add('UserAnalyticsDashboard', '../components/UserAnalyticsDashboard'),
+      handler: async (request, response, context) => ({
+        currentAdmin: context.currentAdmin
+      })
+    }
+  },
   resources: [
     {
       resource: Player,
@@ -522,7 +532,7 @@ export const adminJS = new AdminJS({
         },
         actions: withDefaultListPerPage({
           new: { isAccessible: isSuperAdmin },
-          edit: { 
+          edit: {
             isAccessible: ({ currentAdmin, record }) => {
               if (!currentAdmin) return false;
               if (currentAdmin.role === 'superadmin') return true;
@@ -535,8 +545,8 @@ export const adminJS = new AdminJS({
           },
           delete: { isAccessible: isSuperAdmin },
           bulkDelete: { isAccessible: isSuperAdmin },
-          list: { isAccessible: isSuperAdmin },
-          show: { isAccessible: isSuperAdmin },
+          list: { isAccessible: isAdmin },
+          show: { isAccessible: isAdmin },
         }),
         navigation: {
           name: 'Administration',
@@ -548,14 +558,19 @@ export const adminJS = new AdminJS({
         },
         properties: {
           role: {
-            isVisible: ({ currentAdmin, record }) => {
-              if (!currentAdmin) return false;
-              if (currentAdmin.role === 'superadmin') return true;
+            isVisible: {
+              list: true,
+              filter: true,
+              show: true,
+              edit: true
+            },
+            isDisabled: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return true;
+              if (currentAdmin.role === 'superadmin') return false;
               if (currentAdmin.role === 'admin') {
-                // Admin can see/edit role but not change to superadmin
-                return record?.params?.role !== 'superadmin';
+                return record?.params?.role === 'superadmin';
               }
-              return false;
+              return true;
             },
             availableValues: ({ currentAdmin }) => {
               if (!currentAdmin) return [];
