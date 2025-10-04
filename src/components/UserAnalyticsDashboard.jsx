@@ -300,7 +300,7 @@ const UserAnalyticsDashboard = () => {
     {
       key: 'reaction-rate',
       title: 'Reaction Rate',
-      value: `1:${reactionRate ? reactionRate.toFixed(2) : '0.00'}`,
+      value: `${reactionRate.toFixed(2)} reactions/message`,
       color: '#e91e63',
       icon: '💖',
       subtitle: 'Average reactions per message',
@@ -429,12 +429,12 @@ const UserAnalyticsDashboard = () => {
           'Understand how often users chat, react, and connect with each other so you can spot healthy communities or users who may need support.'
         ),
         React.createElement('div', { key: 'engagement-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' } }, [
-          React.createElement(InsightRow, {
-            key: 'msg-react-ratio',
-            label: 'Message to Reaction Ratio (how often users react)',
-            value: `1:${reactionRate ? reactionRate.toFixed(2) : '0.00'}`,
-            color: '#4facfe'
-          }),
+        React.createElement(InsightRow, {
+          key: 'msg-react-ratio',
+          label: 'Message to Reaction Ratio (how often users react)',
+          value: `${reactionRate.toFixed(2)} reactions/message`,
+          color: '#4facfe'
+        }),
           React.createElement(InsightRow, {
             key: 'dm-success',
             label: 'DM Success Rate (not blocked by cancellation)',
