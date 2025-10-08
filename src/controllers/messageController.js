@@ -77,13 +77,25 @@ export const messageController = {
       expiryMinutes: config.autoExpiry.expiryMinutes
     });
 
+    // Migrate any legacy pending_prefilter messages to the new pending status so they continue processing
+    const migratedResult = await Message.updateMany(
+      { ai_status: 'pending_prefilter' },
+      { $set: { ai_status: 'pending' } }
+    );
+
+    if (migratedResult.modifiedCount > 0) {
+      messageLogger.info('Migrated legacy pending_prefilter messages to pending', {
+        migratedCount: migratedResult.modifiedCount
+      });
+    }
+
     // Only expire messages if auto-expiry is enabled
     if (config.autoExpiry.enabled) {
       const expiryTime = new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000);
-      
+
       // Count messages that will be expired
       const expiredCount = await Message.countDocuments({
-        ai_status: 'pending',
+        ai_status: { $in: ['pending', 'pending_prefilter'] },
         message_date: { $lt: expiryTime }
       });
 
@@ -98,7 +110,7 @@ export const messageController = {
       // First, expire old pending messages
       const expireResult = await Message.updateMany(
         {
-          ai_status: 'pending',
+          ai_status: { $in: ['pending', 'pending_prefilter'] },
           message_date: { $lt: expiryTime }
         },
         {
@@ -114,14 +126,14 @@ export const messageController = {
       }
     }
 
-    const expiryTime = config.autoExpiry.enabled 
+    const expiryTime = config.autoExpiry.enabled
       ? new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000)
       : new Date(0); // If disabled, get all messages
 
     // Get recent pending messages and mark them as processing
     const recentPendingMessages = await Message.find({
       is_valid: true,
-      ai_status: 'pending',
+      ai_status: { $in: ['pending', 'pending_prefilter'] },
       message_date: { $gte: expiryTime }
     })
     .sort({ message_date: 1 }) // Oldest first
