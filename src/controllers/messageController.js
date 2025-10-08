@@ -65,12 +65,12 @@ export const messageController = {
     });
   }),
 
-  // Get unprocessed messages for AI processing
-  getUnprocessed: handleAsyncError(async (req, res) => {
+  // Get pending messages for AI processing
+  getPending: handleAsyncError(async (req, res) => {
     const { limit = 50 } = req.query;
     const maxLimit = Math.min(parseInt(limit), 100);
-    
-    messageLogger.info('getUnprocessed request received', {
+
+    messageLogger.info('getPending request received', {
       requestedLimit: limit,
       maxLimit: maxLimit,
       autoExpiryEnabled: config.autoExpiry.enabled,
@@ -156,7 +156,7 @@ export const messageController = {
       });
     }
 
-    messageLogger.info('getUnprocessed response sent', {
+    messageLogger.info('getPending response sent', {
       returnedCount: recentPendingMessages.length,
       requestedLimit: maxLimit
     });
@@ -164,107 +164,6 @@ export const messageController = {
     res.json({
       data: recentPendingMessages,
       count: recentPendingMessages.length
-    });
-  }),
-
-  // Get pending prefilter messages
-  getPendingPrefilter: handleAsyncError(async (req, res) => {
-    const { limit = 50 } = req.query;
-    const maxLimit = Math.min(parseInt(limit), 100);
-    
-    messageLogger.info('getPendingPrefilter request received', {
-      requestedLimit: limit,
-      maxLimit: maxLimit,
-      autoExpiryEnabled: config.autoExpiry.enabled,
-      expiryMinutes: config.autoExpiry.expiryMinutes
-    });
-
-    // Only expire messages if auto-expiry is enabled
-    if (config.autoExpiry.enabled) {
-      const expiryTime = new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000);
-      
-      // Count messages that will be expired
-      const expiredCount = await Message.countDocuments({
-        ai_status: 'pending_prefilter',
-        message_date: { $lt: expiryTime }
-      });
-
-      if (expiredCount > 0) {
-        messageLogger.info('Expiring old pending_prefilter messages', {
-          count: expiredCount,
-          expiryTime: expiryTime.toISOString(),
-          expiryMinutes: config.autoExpiry.expiryMinutes
-        });
-      }
-
-      // First, expire old pending_prefilter messages by changing status to expired
-      const expireResult = await Message.updateMany(
-        {
-          ai_status: 'pending_prefilter',
-          message_date: { $lt: expiryTime }
-        },
-        {
-          $set: { ai_status: 'expired' }
-        }
-      );
-
-      if (expireResult.modifiedCount > 0) {
-        messageLogger.info('Expired old pending_prefilter messages', {
-          expiredCount: expireResult.modifiedCount,
-          expiryTime: expiryTime.toISOString()
-        });
-      }
-    }
-
-    const expiryTime = config.autoExpiry.enabled 
-      ? new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000)
-      : new Date(0); // If disabled, get all messages
-
-    // Get recent pending_prefilter messages and mark them as pending
-    const pendingPrefilterMessages = await Message.find({
-      ai_status: 'pending_prefilter',
-      message_date: { $gte: expiryTime }
-    })
-    .sort({ message_date: 1 }) // Oldest first
-    .limit(maxLimit);
-
-    messageLogger.info('Found pending_prefilter messages', {
-      foundCount: pendingPrefilterMessages.length,
-      requestedLimit: maxLimit,
-      oldestMessageDate: pendingPrefilterMessages.length > 0 ? pendingPrefilterMessages[0].message_date.toISOString() : null,
-      newestMessageDate: pendingPrefilterMessages.length > 0 ? pendingPrefilterMessages[pendingPrefilterMessages.length - 1].message_date.toISOString() : null
-    });
-
-    // Mark these messages as pending
-    if (pendingPrefilterMessages.length > 0) {
-      const messageIds = pendingPrefilterMessages.map(msg => msg._id);
-      const messageIdNumbers = pendingPrefilterMessages.map(msg => msg.message_id);
-      
-      messageLogger.info('Marking messages as pending', {
-        count: messageIds.length,
-        messageIds: messageIdNumbers.slice(0, 10), // Log first 10 IDs
-        totalIds: messageIdNumbers.length
-      });
-
-      await Message.updateMany(
-        { _id: { $in: messageIds } },
-        { $set: { ai_status: 'pending' } }
-      );
-
-      // Update the status in the returned data
-      pendingPrefilterMessages.forEach(msg => {
-        msg.ai_status = 'pending';
-      });
-    }
-
-    messageLogger.info('getPendingPrefilter response sent', {
-      returnedCount: pendingPrefilterMessages.length,
-      requestedLimit: maxLimit
-    });
-
-    res.json({
-      data: pendingPrefilterMessages,
-      count: pendingPrefilterMessages.length
     });
   }),
 

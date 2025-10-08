@@ -130,7 +130,6 @@ const Dashboard = (props) => {
           'completed': { label: 'Completed', color: '#4d96ff' },
           'failed': { label: 'Failed', color: '#ff6b6b' },
           'expired': { label: 'Expired', color: '#a8a8a8' },
-          'pending_prefilter': { label: 'Pending Prefilter', color: '#9c88ff' },
           'canceled_by_user': { label: 'Canceled by User', color: '#ffa94d' },
           'unknown': { label: 'Unknown', color: '#cccccc' }
         };
@@ -141,7 +140,6 @@ const Dashboard = (props) => {
           'completed',
           'failed',
           'expired',
-          'pending_prefilter',
           'canceled_by_user',
           'unknown'
         ];

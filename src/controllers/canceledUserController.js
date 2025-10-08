@@ -106,7 +106,7 @@ export const canceledUserController = {
       username
     });
 
-    const messageStatusFilter = { ai_status: { $in: ['pending', 'pending_prefilter'] } };
+    const messageStatusFilter = { ai_status: { $in: ['pending'] } };
     const messageUserConditions = [];
     const playerUserConditions = [];
 

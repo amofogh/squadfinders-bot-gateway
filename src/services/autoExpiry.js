@@ -43,7 +43,7 @@ function createAutoExpiryService() {
                 cutoffTime: expiryTime.toISOString()
             });
 
-            const statusFilter = {$in: ['pending', 'pending_prefilter', 'processing']};
+            const statusFilter = {$in: ['pending', 'processing']};
 
             const messagesToExpireCount = await Message.countDocuments({
                 ai_status: statusFilter,
