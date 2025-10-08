@@ -53,7 +53,7 @@ const router = express.Router();
  *           description: Reason for the AI classification
  *         ai_status:
  *           type: string
- *           enum: [pending, processing, completed, failed, expired, pending_prefilter]
+ *           enum: [pending, processing, completed, failed, expired]
  *           default: pending
  *           description: Current AI processing status
  */
@@ -87,7 +87,7 @@ const router = express.Router();
  *         name: ai_status
  *         schema:
  *           type: string
- *           enum: [pending, processing, completed, failed, expired, pending_prefilter]
+ *           enum: [pending, processing, completed, failed, expired]
  *       - in: query
  *         name: page
  *         schema:
@@ -140,13 +140,13 @@ router.get('/valid-since', authMiddleware, authorizeRole(['superadmin', 'admin',
 
 /**
  * @swagger
- * /api/messages/unprocessed:
+ * /api/messages/pending:
  *   get:
- *     summary: Get unprocessed messages for AI processing (Admin only)
+ *     summary: Get pending messages for AI processing (Admin only)
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
- *     description: Returns valid messages with pending AI status that are less than 5 minutes old, sorted by creation date (oldest first). Automatically marks returned messages as 'processing'.
+ *     description: Returns valid messages with pending AI status that are less than the configured expiry window old, sorted by creation date (oldest first). Automatically marks returned messages as 'processing'.
  *     parameters:
  *       - in: query
  *         name: limit
@@ -171,42 +171,7 @@ router.get('/valid-since', authMiddleware, authorizeRole(['superadmin', 'admin',
  *                   type: integer
  *                   description: Number of messages returned
  */
-router.get('/unprocessed', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.getUnprocessed);
-
-/**
- * @swagger
- * /api/messages/pending-prefilter:
- *   get:
- *     summary: Get pending prefilter messages (Admin only)
- *     tags: [Messages]
- *     security:
- *       - basicAuth: []
- *     description: Returns messages with ai_status 'pending_prefilter' that are less than configured minutes old, sorted by creation date (oldest first). Automatically changes expired messages to 'expired' status.
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *           maximum: 100
- *         description: Maximum number of messages to return
- *     responses:
- *       200:
- *         description: List of pending prefilter messages
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Message'
- *                 count:
- *                   type: integer
- *                   description: Number of messages returned
- */
-router.get('/pending-prefilter', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.getPendingPrefilter);
+router.get('/pending', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.getPending);
 
 /**
  * @swagger
