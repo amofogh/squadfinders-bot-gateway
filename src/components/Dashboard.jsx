@@ -46,7 +46,10 @@ const Dashboard = (props) => {
 
       if (!aiStatusResponse.ok) throw new Error('Failed to fetch AI status data');
       const aiStatusData = await aiStatusResponse.json();
-      setAIStatusDistribution(aiStatusData);
+      const sanitizedAIStatusData = Array.isArray(aiStatusData)
+        ? aiStatusData.filter(item => item && item._id !== 'pending_prefilter')
+        : [];
+      setAIStatusDistribution(sanitizedAIStatusData);
 
       if (!messagesChartResponse.ok) throw new Error('Failed to fetch messages chart data');
       const chartData = await messagesChartResponse.json();
@@ -376,7 +379,7 @@ const Dashboard = (props) => {
       React.createElement(StatBox, { key: 'completedMessages', title: 'Completed Messages', value: stats?.completedMessages || 0, color: '#4d96ff', icon: '✅' }),
       React.createElement(StatBox, { key: 'failedMessages', title: 'Failed Messages', value: stats?.failedMessages || 0, color: '#ff6b6b', icon: '❌' }),
       React.createElement(StatBox, { key: 'expiredMessages', title: 'Expired Messages', value: stats?.expiredMessages || 0, color: '#a8a8a8', icon: '⏰' }),
-      React.createElement(StatBox, { key: 'pendingPrefilterMessages', title: 'Pending Prefilter', value: stats?.pendingPrefilterMessages || 0, color: '#9c88ff', icon: '🔍' }),
+      React.createElement(StatBox, { key: 'pendingPrefilterMessages', title: 'Pending Prefilter', value: 0, color: '#9c88ff', icon: '🔍' }),
       React.createElement(StatBox, { key: 'canceledByUserMessages', title: 'Canceled by User', value: stats?.canceledByUserMessages || 0, color: '#ffa94d', icon: '🚫' }),
       React.createElement(StatBox, { key: 'messagesToday', title: 'Messages Today', value: stats?.messagesToday || 0, color: '#38ef7d', icon: '📅' }),
       React.createElement(StatBox, { key: 'messagesPerMin', title: 'Messages/Min', value: stats?.messagesPerMinute || 0, color: '#667eea', icon: '⚡', isDecimal: true }),

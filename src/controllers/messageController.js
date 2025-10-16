@@ -120,7 +120,6 @@ export const messageController = {
 
     // Get recent pending messages and mark them as processing
     const recentPendingMessages = await Message.find({
-      is_valid: true,
       ai_status: 'pending',
       message_date: { $gte: expiryTime }
     })
