@@ -145,6 +145,7 @@ export const dashboardController = {
         failedMessages,
         expiredMessages,
         canceledByUserMessages,
+        pendingPrefilterMessages: 0,
         messagesPerMinute: timeRangeMinutes > 0 ? Math.round(messagesInRange / timeRangeMinutes * 100) / 100 : 0,
         messagesToday: messagesForTimeRange
       }
@@ -237,20 +238,22 @@ export const dashboardController = {
       }
     ]);
 
+    const filteredDistribution = distribution.filter(item => item._id !== 'pending_prefilter');
+
     // Add unknown status for messages without ai_status (null values)
     const unknownCount = await Message.countDocuments({
       ai_status: { $exists: false },
       message_date: { $gte: startDate }
     });
     if (unknownCount > 0) {
-      distribution.push({ _id: 'unknown', count: unknownCount });
+      filteredDistribution.push({ _id: 'unknown', count: unknownCount });
     }
-    
+
     dashboardLogger.info('AI status distribution generated', {
       timeRange,
-      statuses: distribution.length
+      statuses: filteredDistribution.length
     });
 
-    res.json(distribution);
+    res.json(filteredDistribution);
   }),
 };
