@@ -9,8 +9,8 @@ import { Reaction, UserAnalytics } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
 import { config } from './index.js';
 
-const adminThemeStyles = AdminJS.bundle('../admin-assets/admin-theme.css');
-const adminThemeInitializer = AdminJS.bundle('../admin-assets/admin-theme-init.js');
+const adminThemeStyles = '/admin-assets/admin-theme.css';
+const adminThemeInitializer = '/admin-assets/admin-theme-init.js';
 
 // Register AdminJS Mongoose adapter
 AdminJS.registerAdapter(AdminJSMongoose);
