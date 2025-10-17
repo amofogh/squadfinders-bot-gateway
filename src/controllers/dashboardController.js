@@ -85,49 +85,63 @@ export const dashboardController = {
 
     dashboardLogger.info('Fetching dashboard stats', { timeRange, startDate: startDate.toISOString() });
 
-    const [playerCount, messageCount, adminUserCount] = await Promise.all([
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const todayMatch = { message_date: { $gte: startOfToday } };
+
+    const [
+      playerCount,
+      messageCount,
+      adminUserCount,
+      activePlayers,
+      pcPlayers,
+      consolePlayers,
+      lfgMessages,
+      validMessages,
+      pendingMessages,
+      processingMessages,
+      messagesToday,
+      validMessagesToday
+    ] = await Promise.all([
       Player.countDocuments(),
       Message.countDocuments(),
-      AdminUser.countDocuments()
-    ]);
-
-
-    const [activePlayers, pcPlayers, consolePlayers, lfgMessages, validMessages] = await Promise.all([
+      AdminUser.countDocuments(),
       Player.countDocuments({ active: true }),
       Player.countDocuments({ platform: 'PC' }),
       Player.countDocuments({ platform: 'Console' }),
       Message.countDocuments({ is_lfg: true }),
-      Message.countDocuments({ is_valid: true })
-    ]);
-
-    // AI Status counts (all time) - added processingMessages back for old dashboard
-    const [pendingMessages, processingMessages, completedMessages, failedMessages, expiredMessages, canceledByUserMessages] = await Promise.all([
-      Message.countDocuments({ ai_status: 'pending', is_valid: true }),
+      Message.countDocuments({ is_valid: true }),
+      Message.countDocuments({ ai_status: 'pending' }),
       Message.countDocuments({ ai_status: 'processing' }),
-      Message.countDocuments({ ai_status: 'completed' }),
-      Message.countDocuments({ ai_status: 'failed' }),
-      Message.countDocuments({ ai_status: 'expired' }),
-      Message.countDocuments({ ai_status: 'canceled_by_user' })
+      Message.countDocuments(todayMatch),
+      Message.countDocuments({ ...todayMatch, is_valid: true })
     ]);
 
-    // Calculate messages per minute for the selected time range
-    const timeRangeMs = Date.now() - startDate.getTime();
-    const timeRangeMinutes = timeRangeMs / (1000 * 60);
-
-    const [messagesInRange, validMessagesInRange] = await Promise.all([
-      Message.countDocuments({ message_date: { $gte: startDate } }),
-      Message.countDocuments({ message_date: { $gte: startDate }, is_valid: true })
+    const statusCountsInRange = await Message.aggregate([
+      {
+        $match: {
+          message_date: { $gte: startDate },
+          ai_status: { $in: ['completed', 'failed', 'expired', 'canceled_by_user'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$ai_status',
+          count: { $sum: 1 }
+        }
+      }
     ]);
 
-    // Calculate messages today (from 00:00 today until now) - for "deleted today"
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const statusMap = statusCountsInRange.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
 
-    // Messages for the selected time range (not just today)
-    const [messagesForTimeRange, validMessagesForTimeRange] = await Promise.all([
-      Message.countDocuments({ message_date: { $gte: startDate } }),
-      Message.countDocuments({ message_date: { $gte: startDate }, is_valid: true })
-    ]);
+    const completedMessages = statusMap.completed || 0;
+    const failedMessages = statusMap.failed || 0;
+    const expiredMessages = statusMap.expired || 0;
+    const canceledByUserMessages = statusMap.canceled_by_user || 0;
 
     const responsePayload = {
       counts: {
@@ -145,8 +159,9 @@ export const dashboardController = {
         failedMessages,
         expiredMessages,
         canceledByUserMessages,
-        messagesPerMinute: timeRangeMinutes > 0 ? Math.round(messagesInRange / timeRangeMinutes * 100) / 100 : 0,
-        messagesToday: messagesForTimeRange
+        pendingPrefilterMessages: 0,
+        messagesToday,
+        validMessagesToday
       }
     };
 
@@ -237,20 +252,22 @@ export const dashboardController = {
       }
     ]);
 
+    const filteredDistribution = distribution.filter(item => item._id !== 'pending_prefilter');
+
     // Add unknown status for messages without ai_status (null values)
     const unknownCount = await Message.countDocuments({
       ai_status: { $exists: false },
       message_date: { $gte: startDate }
     });
     if (unknownCount > 0) {
-      distribution.push({ _id: 'unknown', count: unknownCount });
+      filteredDistribution.push({ _id: 'unknown', count: unknownCount });
     }
-    
+
     dashboardLogger.info('AI status distribution generated', {
       timeRange,
-      statuses: distribution.length
+      statuses: filteredDistribution.length
     });
 
-    res.json(distribution);
+    res.json(filteredDistribution);
   }),
 };
