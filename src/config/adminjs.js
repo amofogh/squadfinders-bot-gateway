@@ -9,6 +9,9 @@ import { Reaction, UserAnalytics } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
 import { config } from './index.js';
 
+const adminThemeStyles = AdminJS.bundle('../admin-assets/admin-theme.css');
+const adminThemeInitializer = AdminJS.bundle('../admin-assets/admin-theme-init.js');
+
 // Register AdminJS Mongoose adapter
 AdminJS.registerAdapter(AdminJSMongoose);
 
@@ -82,6 +85,10 @@ const superAdminRole = withDefaultListPerPage({
 
 export const adminJS = new AdminJS({
   componentLoader,
+  assets: {
+    styles: [adminThemeStyles],
+    scripts: [adminThemeInitializer],
+  },
   dashboard: {
     component: componentLoader.add('Dashboard', '../components/Dashboard'),
     handler: async (request, response, context) => {

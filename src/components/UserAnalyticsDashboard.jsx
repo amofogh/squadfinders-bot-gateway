@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const MAIN_DASHBOARD_PATH = '/admin';
 const USER_ANALYTICS_PATH = '/admin/pages/user-analytics';
+const THEME_STORAGE_KEY = 'sf-admin-theme';
+const LEGACY_THEME_KEYS = ['sf-dashboard-theme', 'sf-analytics-theme'];
 
 const UserAnalyticsDashboard = () => {
   const [insights, setInsights] = useState(null);
@@ -20,40 +22,132 @@ const UserAnalyticsDashboard = () => {
       return undefined;
     }
 
-    const storedPreference = window.localStorage?.getItem('sf-analytics-theme');
-    if (storedPreference) {
+    const themeManager = window.__squadfindersAdminTheme;
+    const storedPreference = themeManager?.getStoredTheme?.();
+    let usingSystemPreference = false;
+
+    if (storedPreference === 'dark' || storedPreference === 'light') {
       setIsDarkMode(storedPreference === 'dark');
     } else {
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(prefersDark);
+      setIsDarkMode(Boolean(prefersDark));
+      usingSystemPreference = true;
     }
 
-    const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-    const handlePreferenceChange = (event) => {
-      const enableDark = event.matches;
-      setIsDarkMode(enableDark);
-      window.localStorage?.setItem('sf-analytics-theme', enableDark ? 'dark' : 'light');
+    const handleThemeChange = (event) => {
+      const themeValue = event?.detail?.theme;
+      if (themeValue === 'dark' || themeValue === 'light') {
+        setIsDarkMode(themeValue === 'dark');
+      }
     };
 
-    if (mediaQuery && mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handlePreferenceChange);
-      return () => mediaQuery.removeEventListener('change', handlePreferenceChange);
+    const handleStorage = (event) => {
+      if (event.key === THEME_STORAGE_KEY && (event.newValue === 'dark' || event.newValue === 'light')) {
+        setIsDarkMode(event.newValue === 'dark');
+      }
+
+      if (LEGACY_THEME_KEYS.includes(event.key) && (event.newValue === 'dark' || event.newValue === 'light')) {
+        setIsDarkMode(event.newValue === 'dark');
+      }
+    };
+
+    window.addEventListener('sf-admin-theme-change', handleThemeChange);
+    window.addEventListener('storage', handleStorage);
+
+    const mediaQuery = usingSystemPreference && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null;
+
+    let handlePreferenceChange;
+
+    if (mediaQuery) {
+      handlePreferenceChange = (event) => {
+        setIsDarkMode(event.matches);
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handlePreferenceChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handlePreferenceChange);
+      }
     }
 
-    if (mediaQuery && mediaQuery.addListener) {
-      mediaQuery.addListener(handlePreferenceChange);
-      return () => mediaQuery.removeListener(handlePreferenceChange);
-    }
+    return () => {
+      window.removeEventListener('sf-admin-theme-change', handleThemeChange);
+      window.removeEventListener('storage', handleStorage);
 
-    return undefined;
+      if (mediaQuery && handlePreferenceChange) {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handlePreferenceChange);
+        } else if (mediaQuery.removeListener) {
+          mediaQuery.removeListener(handlePreferenceChange);
+        }
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const themeValue = isDarkMode ? 'dark' : 'light';
+    const themeManager = window.__squadfindersAdminTheme;
+
+    if (themeManager?.applyTheme) {
+      themeManager.applyTheme(themeValue);
+    } else {
+      const root = document.documentElement;
+      if (root) {
+        root.setAttribute('data-admin-theme', themeValue);
+        root.classList.toggle('sf-dark-theme', isDarkMode);
+      }
+
+      if (document.body) {
+        document.body.setAttribute('data-admin-theme', themeValue);
+        document.body.classList.toggle('sf-dark-theme', isDarkMode);
+      }
+
+      try {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, themeValue);
+        LEGACY_THEME_KEYS.forEach((key) => window.localStorage?.removeItem(key));
+      } catch (error) {
+        // Ignore storage errors (e.g., private browsing)
+      }
+    }
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => {
       const next = !prev;
+
       if (typeof window !== 'undefined') {
-        window.localStorage?.setItem('sf-analytics-theme', next ? 'dark' : 'light');
+        const themeValue = next ? 'dark' : 'light';
+        const themeManager = window.__squadfindersAdminTheme;
+
+        if (themeManager?.setTheme) {
+          themeManager.setTheme(themeValue);
+        } else {
+          try {
+            window.localStorage?.setItem(THEME_STORAGE_KEY, themeValue);
+            LEGACY_THEME_KEYS.forEach((key) => window.localStorage?.removeItem(key));
+          } catch (error) {
+            // Ignore storage errors
+          }
+
+          const root = document.documentElement;
+          if (root) {
+            root.setAttribute('data-admin-theme', themeValue);
+            root.classList.toggle('sf-dark-theme', next);
+          }
+
+          if (document.body) {
+            document.body.setAttribute('data-admin-theme', themeValue);
+            document.body.classList.toggle('sf-dark-theme', next);
+          }
+        }
       }
+
       return next;
     });
   };
