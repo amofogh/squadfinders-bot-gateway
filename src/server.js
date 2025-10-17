@@ -47,6 +47,10 @@ const sessionOptions = {
 // We need to tell Express to use sessions
 app.use(session(sessionOptions));
 
+// Serve AdminJS custom asset bundle (dark mode theme, scripts)
+const adminAssetsPath = path.join(process.cwd(), 'src', 'admin-assets');
+app.use('/admin-assets', express.static(adminAssetsPath));
+
 // AdminJS Router
 const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
   adminJS,
