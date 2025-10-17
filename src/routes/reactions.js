@@ -35,7 +35,7 @@ const router = express.Router();
  *           type: string
  *           enum: [add, remove]
  *           default: add
- *         at:
+ *         message_date:
  *           type: string
  *           format: date-time
  *         meta:
