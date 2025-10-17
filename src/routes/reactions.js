@@ -35,7 +35,7 @@ const router = express.Router();
  *           type: string
  *           enum: [add, remove]
  *           default: add
- *         at:
+ *         message_date:
  *           type: string
  *           format: date-time
  *         meta:
@@ -180,22 +180,22 @@ router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), rea
 
 /**
  * @swagger
- * /api/reactions/{id}:
+ * /api/reactions/message/{messageId}:
  *   delete:
- *     summary: Delete reaction (Admin only)
+ *     summary: Delete reactions by message ID (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: messageId
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
- *         description: Reaction deleted successfully
+ *         description: Reactions deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.delete);
+router.delete('/message/:messageId', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.deleteByMessageId);
 
 export default router;

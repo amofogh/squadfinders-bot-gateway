@@ -30,7 +30,7 @@ const ReactionSchema = new mongoose.Schema({
     enum: ['add', 'remove'],
     default: 'add'
   },
-  at: {
+  message_date: {
     type: Date,
     default: () => new Date(),
     index: true
@@ -44,8 +44,8 @@ const ReactionSchema = new mongoose.Schema({
 });
 
 // Compound indexes
-ReactionSchema.index({ user_id: 1, message_id: 1, emoji: 1, at: -1 });
-ReactionSchema.index({ user_id: 1, at: -1 });
+ReactionSchema.index({ user_id: 1, message_id: 1, emoji: 1, message_date: -1 });
+ReactionSchema.index({ user_id: 1, message_date: -1 });
 ReactionSchema.index({ message_id: 1 });
 ReactionSchema.index({ chat_id: 1 });
 ReactionSchema.index({ emoji: 1 });
