@@ -461,7 +461,6 @@ const Dashboard = (props) => {
     
     // Statistics Grid
     React.createElement('div', { key: 'stats', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}, [
-      React.createElement(StatBox, { key: 'players', title: 'Total Players', value: stats?.players || 0, color: '#667eea', icon: '👥' }),
       React.createElement(StatBox, { key: 'messages', title: 'Total Messages', value: stats?.messages || 0, color: '#764ba2', icon: '💬' }),
       React.createElement(StatBox, { key: 'validMessages', title: 'Valid Messages', value: stats?.validMessages || 0, color: '#43e97b', icon: '✅' }),
       React.createElement(StatBox, { key: 'lfgMessages', title: 'LFG Messages', value: stats?.lfgMessages || 0, color: '#f093fb', icon: '🎮' }),
@@ -474,8 +473,6 @@ const Dashboard = (props) => {
       React.createElement(StatBox, { key: 'canceledByUserMessages', title: 'Canceled by User', value: stats?.canceledByUserMessages || 0, color: '#ffa94d', icon: '🚫' }),
       React.createElement(StatBox, { key: 'messagesToday', title: 'Messages Today', value: stats?.messagesToday || 0, color: '#38ef7d', icon: '📅' }),
       React.createElement(StatBox, { key: 'validMessagesToday', title: 'Valid Today', value: stats?.validMessagesToday || 0, color: '#a8edea', icon: '✨' }),
-      React.createElement(StatBox, { key: 'messagesPerMin', title: 'Messages/Min', value: stats?.messagesPerMinute || 0, color: '#667eea', icon: '⚡', isDecimal: true }),
-      React.createElement(StatBox, { key: 'validMessagesPerMin', title: 'Valid/Min', value: stats?.validMessagesPerMinute || 0, color: '#43e97b', icon: '📈', isDecimal: true }),
       React.createElement(StatBox, { key: 'deletedMessages', title: 'Total Deleted', value: stats?.deletedMessages || 0, color: '#ff6b6b', icon: '🗑️' }),
       React.createElement(StatBox, { key: 'deletedToday', title: 'Deleted Today', value: stats?.deletedToday || 0, color: '#ff8a80', icon: '📅' }),
       React.createElement(StatBox, { key: 'avgDeletionTime', title: 'Avg Deletion Time', value: `${stats?.avgDeletionTimeSeconds || 0}s`, color: '#ffa726', icon: '⏱️' })

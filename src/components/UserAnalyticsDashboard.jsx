@@ -245,6 +245,14 @@ const UserAnalyticsDashboard = () => {
       subtitle: 'Registered users'
     },
     {
+      key: 'total-players',
+      title: 'Total Players',
+      value: insights?.total_players_count || 0,
+      color: '#5b21b6',
+      icon: '🎮',
+      subtitle: 'Players recorded across squads'
+    },
+    {
       key: 'cancel-rate',
       title: 'Cancel Rate',
       value: `${((insights?.cancel_rate || 0) * 100).toFixed(1)}%`,
