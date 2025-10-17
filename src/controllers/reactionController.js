@@ -22,7 +22,7 @@ export const reactionController = {
     
     const [reactions, total] = await Promise.all([
       Reaction.find(query)
-        .sort({ at: -1 })
+        .sort({ message_date: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
       Reaction.countDocuments(query)
@@ -58,12 +58,21 @@ export const reactionController = {
 
   // Create new reaction
   create: handleAsyncError(async (req, res) => {
-    const reaction = new Reaction(req.body);
+    const payload = { ...req.body };
+
+    if (payload.at && !payload.message_date) {
+      payload.message_date = payload.at;
+    }
+
+    delete payload.at;
+
+    const reaction = new Reaction(payload);
     await reaction.save();
-    
+
     // Record analytics
     if (reaction.user_id && reaction.emoji) {
-      await recordReaction(reaction.user_id, reaction.emoji, reaction.at);
+      const reactionTimestamp = reaction.message_date || reaction.at || new Date();
+      await recordReaction(reaction.user_id, reaction.emoji, reactionTimestamp);
       
       // Update username in analytics if provided
       if (reaction.username) {
@@ -91,7 +100,15 @@ export const reactionController = {
       return res.status(400).json({ error: 'Invalid reaction ID' });
     }
 
-    const reaction = await Reaction.findByIdAndUpdate(id, req.body, {
+    const updatePayload = { ...req.body };
+
+    if (updatePayload.at && !updatePayload.message_date) {
+      updatePayload.message_date = updatePayload.at;
+    }
+
+    delete updatePayload.at;
+
+    const reaction = await Reaction.findByIdAndUpdate(id, updatePayload, {
       new: true,
       runValidators: true
     });
