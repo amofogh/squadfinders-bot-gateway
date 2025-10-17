@@ -48,5 +48,8 @@ export const config = {
     enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false', // Default true
     disableAfterHours: parseNumber(process.env.PLAYER_DISABLE_AFTER_HOURS, 6), // Default 6 hours
     intervalHours: parseNumber(process.env.PLAYER_CLEANUP_INTERVAL_HOURS, 12), // Default 12 hours
+  },
+  messageSpam: {
+    windowMinutes: parseNumber(process.env.MESSAGE_SPAM_WINDOW_MINUTES, 60), // Default 60 minutes
   }
 };

@@ -3,6 +3,26 @@ import React, { useState, useEffect } from 'react';
 const MAIN_DASHBOARD_PATH = '/admin';
 const USER_ANALYTICS_PATH = '/admin/pages/user-analytics';
 
+const LIGHT_THEME = {
+  background: '#f8f9fa',
+  cardBackground: '#ffffff',
+  cardBackgroundActive: '#eef2ff',
+  border: '#e2e8f0',
+  textPrimary: '#1f2937',
+  textSecondary: '#4b5563',
+  textMuted: '#6b7280',
+  buttonBackground: '#667eea',
+  buttonText: '#ffffff',
+  buttonBorder: '#5a67d8',
+  inputBackground: '#ffffff',
+  inputBorder: '#d1d5db',
+  cardShadow: '0 4px 6px rgba(0,0,0,0.1)',
+  cardShadowStrong: '0 8px 15px rgba(0,0,0,0.15)',
+  navText: '#1f2937',
+  chipBackground: 'rgba(102, 126, 234, 0.12)',
+  chipBorder: 'rgba(102, 126, 234, 0.3)'
+};
+
 const Dashboard = (props) => {
   const [stats, setStats] = useState(null);
   const [aiStatusDistribution, setAIStatusDistribution] = useState([]);
@@ -46,7 +66,10 @@ const Dashboard = (props) => {
 
       if (!aiStatusResponse.ok) throw new Error('Failed to fetch AI status data');
       const aiStatusData = await aiStatusResponse.json();
-      setAIStatusDistribution(aiStatusData);
+      const aiStatusDataArray = Array.isArray(aiStatusData)
+        ? aiStatusData
+        : [];
+      setAIStatusDistribution(aiStatusDataArray);
 
       if (!messagesChartResponse.ok) throw new Error('Failed to fetch messages chart data');
       const chartData = await messagesChartResponse.json();
@@ -289,30 +312,81 @@ const Dashboard = (props) => {
     { label: '60s', value: 60 }
   ];
 
+  const styleElement = React.createElement('style', {
+    key: 'styles'
+  }, '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
+
   if (loading) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#f8f9fa', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}, [
+    return React.createElement('div', {
+      style: {
+        padding: '40px',
+        textAlign: 'center',
+        backgroundColor: LIGHT_THEME.background,
+        minHeight: '400px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, [
+      styleElement,
       React.createElement('div', { key: 'loader' }, [
-        React.createElement('div', { key: 'spinner', style: { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}),
-        React.createElement('h2', { key: 'text', style: { color: '#666', margin: 0 }}, 'Loading Dashboard...')
+        React.createElement('div', {
+          key: 'spinner',
+          style: {
+            width: '40px',
+            height: '40px',
+            border: '4px solid rgba(148, 163, 184, 0.3)',
+            borderTop: `4px solid ${LIGHT_THEME.buttonBackground}`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }
+        }),
+        React.createElement('h2', { key: 'text', style: { color: LIGHT_THEME.textSecondary, margin: 0 }}, 'Loading Dashboard...')
       ])
     ]);
   }
 
   if (error) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '8px', margin: '20px', color: '#c53030'}}, [
-      React.createElement('h2', { key: 'title', style: { marginBottom: '10px' }}, 'Dashboard Error'),
-      React.createElement('p', { key: 'message', style: { margin: 0 }}, error)
+    return React.createElement('div', {
+      style: {
+        padding: '40px',
+        textAlign: 'center',
+        backgroundColor: LIGHT_THEME.background,
+        minHeight: '400px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, [
+      styleElement,
+      React.createElement('div', {
+        key: 'error-card',
+        style: {
+          backgroundColor: LIGHT_THEME.cardBackground,
+          border: `1px solid ${LIGHT_THEME.border}`,
+          borderRadius: '12px',
+          padding: '30px',
+          boxShadow: LIGHT_THEME.cardShadow,
+          maxWidth: '420px'
+        }
+      }, [
+        React.createElement('h2', { key: 'title', style: { marginBottom: '10px', color: LIGHT_THEME.textPrimary }}, 'Dashboard Error'),
+        React.createElement('p', { key: 'message', style: { margin: 0, color: LIGHT_THEME.textSecondary }}, error)
+      ])
     ]);
   }
 
-  return React.createElement('div', { style: { padding: '20px', backgroundColor: '#f8f9fa', minHeight: '100vh' }}, [
-    React.createElement('style', { key: 'styles' }, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`),
+  return React.createElement('div', {
+    style: { padding: '20px', backgroundColor: LIGHT_THEME.background, minHeight: '100vh', color: LIGHT_THEME.textPrimary }
+  }, [
+    styleElement,
 
     // Header with auto-refresh controls
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}, [
-      React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' }}, 'SquadFinders Dashboard'),
+      React.createElement('h1', { key: 'title', style: { margin: 0, color: LIGHT_THEME.textPrimary, fontSize: '28px', fontWeight: 'bold' }}, 'SquadFinders Dashboard'),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}, [
-        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' }}, [
+        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: LIGHT_THEME.textSecondary }}, [
           React.createElement('input', {
             key: 'refresh-checkbox',
             type: 'checkbox',
@@ -326,7 +400,7 @@ const Dashboard = (props) => {
           key: 'refresh-interval',
           value: refreshInterval,
           onChange: (e) => setRefreshInterval(parseInt(e.target.value, 10)),
-          style: { padding: '6px 10px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '14px' }
+          style: { padding: '6px 10px', borderRadius: '4px', border: `1px solid ${LIGHT_THEME.inputBorder}`, background: LIGHT_THEME.inputBackground, color: LIGHT_THEME.textPrimary, fontSize: '14px' }
         }, refreshIntervals.map(interval =>
           React.createElement('option', { key: interval.value, value: interval.value }, interval.label)
         )),
@@ -334,9 +408,9 @@ const Dashboard = (props) => {
           key: 'manual-refresh',
           onClick: fetchData,
           style: {
-            background: '#667eea',
-            color: 'white',
-            border: 'none',
+            background: LIGHT_THEME.buttonBackground,
+            color: LIGHT_THEME.buttonText,
+            border: `1px solid ${LIGHT_THEME.buttonBorder}`,
             padding: '8px 16px',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -367,7 +441,6 @@ const Dashboard = (props) => {
 
     // Statistics Grid
     React.createElement('div', { key: 'stats', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}, [
-      React.createElement(StatBox, { key: 'players', title: 'Total Players', value: stats?.players || 0, color: '#667eea', icon: '👥' }),
       React.createElement(StatBox, { key: 'messages', title: 'Total Messages', value: stats?.messages || 0, color: '#764ba2', icon: '💬' }),
       React.createElement(StatBox, { key: 'lfgMessages', title: 'LFG Messages', value: stats?.lfgMessages || 0, color: '#f093fb', icon: '🎮' }),
       React.createElement(StatBox, { key: 'activePlayers', title: 'Active Players', value: stats?.activePlayers || 0, color: '#00f2fe', icon: '🟢' }),
@@ -376,26 +449,24 @@ const Dashboard = (props) => {
       React.createElement(StatBox, { key: 'completedMessages', title: 'Completed Messages', value: stats?.completedMessages || 0, color: '#4d96ff', icon: '✅' }),
       React.createElement(StatBox, { key: 'failedMessages', title: 'Failed Messages', value: stats?.failedMessages || 0, color: '#ff6b6b', icon: '❌' }),
       React.createElement(StatBox, { key: 'expiredMessages', title: 'Expired Messages', value: stats?.expiredMessages || 0, color: '#a8a8a8', icon: '⏰' }),
-      React.createElement(StatBox, { key: 'pendingPrefilterMessages', title: 'Pending Prefilter', value: stats?.pendingPrefilterMessages || 0, color: '#9c88ff', icon: '🔍' }),
       React.createElement(StatBox, { key: 'canceledByUserMessages', title: 'Canceled by User', value: stats?.canceledByUserMessages || 0, color: '#ffa94d', icon: '🚫' }),
       React.createElement(StatBox, { key: 'messagesToday', title: 'Messages Today', value: stats?.messagesToday || 0, color: '#38ef7d', icon: '📅' }),
-      React.createElement(StatBox, { key: 'messagesPerMin', title: 'Messages/Min', value: stats?.messagesPerMinute || 0, color: '#667eea', icon: '⚡', isDecimal: true }),
     ]),
 
     // Charts Grid
     React.createElement('div', { key: 'charts', style: { display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}, [
       // Messages Over Time Chart
-      React.createElement('div', { key: 'messagesChartContainer', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
+      React.createElement('div', { key: 'messagesChartContainer', style: { backgroundColor: LIGHT_THEME.cardBackground, padding: '25px', borderRadius: '12px', boxShadow: LIGHT_THEME.cardShadow, border: `1px solid ${LIGHT_THEME.border}` }}, [
         React.createElement('div', { key: 'chart-header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}, [
-          React.createElement('h3', { key: 'title', style: { color: '#333', fontSize: '18px', fontWeight: '600', margin: 0 }}, 'Messages Over Time'),
+          React.createElement('h3', { key: 'title', style: { color: LIGHT_THEME.textPrimary, fontSize: '18px', fontWeight: '600', margin: 0 }}, 'Messages Over Time'),
           React.createElement('div', { key: 'buttons' },
             timeButtons.map(btn => React.createElement('button', {
               key: btn.value,
               onClick: () => setTimeRange(btn.value),
               style: {
-                background: timeRange === btn.value ? '#667eea' : '#f8f9fa',
-                color: timeRange === btn.value ? 'white' : '#333',
-                border: '1px solid #e2e8f0',
+                background: timeRange === btn.value ? LIGHT_THEME.buttonBackground : LIGHT_THEME.cardBackground,
+                color: timeRange === btn.value ? LIGHT_THEME.buttonText : LIGHT_THEME.textPrimary,
+                border: `1px solid ${LIGHT_THEME.border}`,
                 padding: '8px 12px',
                 marginLeft: '5px',
                 borderRadius: '6px',
@@ -407,9 +478,9 @@ const Dashboard = (props) => {
               key: 'reset-zoom',
               onClick: () => messagesChartInstance && messagesChartInstance.resetZoom(),
               style: {
-                background: '#f8f9fa',
-                color: '#333',
-                border: '1px solid #e2e8f0',
+                background: LIGHT_THEME.cardBackground,
+                color: LIGHT_THEME.textPrimary,
+                border: `1px solid ${LIGHT_THEME.border}`,
                 padding: '8px 12px',
                 marginLeft: '10px',
                 borderRadius: '6px',
@@ -429,8 +500,8 @@ const Dashboard = (props) => {
 
       React.createElement('div', { key: 'chartsRow', style: { display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }}, [
         // AI Status Distribution Chart
-        React.createElement('div', { key: 'aiStatusChartContainer', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}, [
-          React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' }}, 'AI Processing Status'),
+        React.createElement('div', { key: 'aiStatusChartContainer', style: { backgroundColor: LIGHT_THEME.cardBackground, padding: '25px', borderRadius: '12px', boxShadow: LIGHT_THEME.cardShadow, border: `1px solid ${LIGHT_THEME.border}` }}, [
+          React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: LIGHT_THEME.textPrimary, fontSize: '18px', fontWeight: '600' }}, 'AI Processing Status'),
           React.createElement('div', { key: 'canvas-container', style: { height: '300px', position: 'relative' }},
             React.createElement('canvas', { id: 'aiStatusChart', style: { width: '100%', height: '100%' } })
           )
@@ -447,10 +518,10 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     gap: '8px',
     padding: '20px',
     borderRadius: '12px',
-    border: '1px solid #e2e8f0',
-    backgroundColor: active ? '#eef2ff' : 'white',
-    boxShadow: active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)',
-    color: '#1f2937',
+    border: `1px solid ${LIGHT_THEME.border}`,
+    backgroundColor: active ? LIGHT_THEME.cardBackgroundActive : LIGHT_THEME.cardBackground,
+    boxShadow: active ? LIGHT_THEME.cardShadowStrong : LIGHT_THEME.cardShadow,
+    color: LIGHT_THEME.navText,
     textDecoration: 'none',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     cursor: 'pointer'
@@ -462,17 +533,17 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-3px)';
-      target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.25)';
+      target.style.boxShadow = LIGHT_THEME.cardShadowStrong;
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)';
+      target.style.boxShadow = active ? LIGHT_THEME.cardShadowStrong : LIGHT_THEME.cardShadow;
     }
   }, [
     React.createElement('div', { key: 'icon', style: { fontSize: '24px' } }, icon),
     React.createElement('div', { key: 'label', style: { fontWeight: '600', fontSize: '16px' } }, label),
-    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: '#4b5563' } }, description)
+    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: LIGHT_THEME.textSecondary } }, description)
   ]);
 };
 
@@ -480,11 +551,11 @@ const StatBox = ({ title, value, color, icon, isDecimal = false }) => {
   const displayValue = isDecimal ? (typeof value === 'number' ? value.toFixed(2) : value) : (typeof value === 'number' ? value.toLocaleString() : value);
   return React.createElement('div', {
     style: {
-      backgroundColor: 'white',
+      backgroundColor: LIGHT_THEME.cardBackground,
       padding: '20px',
       borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      border: '1px solid #e2e8f0',
+      boxShadow: LIGHT_THEME.cardShadow,
+      border: `1px solid ${LIGHT_THEME.border}`,
       borderLeft: `4px solid ${color}`,
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       cursor: 'default'
@@ -492,17 +563,17 @@ const StatBox = ({ title, value, color, icon, isDecimal = false }) => {
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-2px)';
-      target.style.boxShadow = '0 8px 15px rgba(0,0,0,0.15)';
+      target.style.boxShadow = LIGHT_THEME.cardShadowStrong;
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+      target.style.boxShadow = LIGHT_THEME.cardShadow;
     }
   }, [
     React.createElement('div', { key: 'header', style: { display: 'flex', alignItems: 'center', marginBottom: '12px' }}, [
       React.createElement('span', { key: 'icon', style: { fontSize: '20px', marginRight: '8px' }}, icon),
-      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: '#666', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' }}, title)
+      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: LIGHT_THEME.textMuted, textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' }}, title)
     ]),
     React.createElement('div', { key: 'value', style: { fontSize: '24px', fontWeight: 'bold', color: color, lineHeight: '1' }}, displayValue)
   ]);
