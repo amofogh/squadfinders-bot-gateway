@@ -306,12 +306,12 @@ const UserAnalyticsDashboard = () => {
       isDecimal: true
     },
     {
-      key: 'reaction-rate',
-      title: 'Reaction Rate',
-      value: `${reactionRate.toFixed(2)} reactions/message`,
+      key: 'total-reactions',
+      title: 'Total Reactions',
+      value: (insights?.total_reactions || 0).toLocaleString(),
       color: '#e91e63',
       icon: '💖',
-      subtitle: 'Average reactions per message',
+      subtitle: 'Reactions recorded across all users',
       isDecimal: false
     },
     {

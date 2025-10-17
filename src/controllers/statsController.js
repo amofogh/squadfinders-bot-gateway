@@ -38,6 +38,7 @@ export const statsController = {
             avg_lost_due_cancel: { $avg: '$dm.total_skipped_canceled' },
             avg_msgs: { $avg: '$messages.total' },
             avg_reacts: { $avg: '$reactions.total' },
+            total_reactions: { $sum: '$reactions.total' },
             avg_player: { $avg: '$player.count' },
             canceled_users: {
               $sum: {
@@ -54,6 +55,7 @@ export const statsController = {
             avg_lost_due_cancel: { $round: ['$avg_lost_due_cancel', 2] },
             avg_msgs: { $round: ['$avg_msgs', 2] },
             avg_reacts: { $round: ['$avg_reacts', 2] },
+            total_reactions: 1,
             avg_player: { $round: ['$avg_player', 2] },
             cancel_rate: {
               $round: [
@@ -91,6 +93,7 @@ export const statsController = {
       avg_lost_due_cancel: 0,
       avg_msgs: 0,
       avg_reacts: 0,
+      total_reactions: 0,
       avg_player: 0,
       cancel_rate: 0,
       canceled_users: 0

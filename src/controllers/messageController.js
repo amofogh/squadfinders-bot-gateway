@@ -196,29 +196,34 @@ export const messageController = {
       messageLength: message?.length
     });
 
-    // Spam validation: Check if the same sender in the same group has posted the exact same message in the past hour
+    // Spam validation: Check if the same sender in the same group has posted the exact same message in the configured window
     if (sender && sender.id && group && group.group_id && message) {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      
-      const existingMessage = await Message.findOne({
-        'sender.id': sender.id,
-        'group.group_id': group.group_id,
-        message: message,
-        message_date: { $gte: oneHourAgo }
-      });
-      
-      if (existingMessage) {
-        messageLogger.warn('Duplicate message detected', {
-          senderId: sender.id,
-          groupId: group.group_id,
-          existingMessageId: existingMessage.message_id,
-          existingMessageDate: existingMessage.message_date.toISOString()
+      const spamWindowMinutes = Math.max(config.messageSpam?.windowMinutes ?? 60, 0);
+
+      if (spamWindowMinutes > 0) {
+        const spamWindowStart = new Date(Date.now() - spamWindowMinutes * 60 * 1000);
+
+        const existingMessage = await Message.findOne({
+          'sender.id': sender.id,
+          'group.group_id': group.group_id,
+          message: message,
+          message_date: { $gte: spamWindowStart }
         });
 
-        return res.status(409).json({ 
-          error: 'Duplicate message detected',
-          message: 'This sender has already posted the same message in this group within the past hour'
-        });
+        if (existingMessage) {
+          messageLogger.warn('Duplicate message detected', {
+            senderId: sender.id,
+            groupId: group.group_id,
+            existingMessageId: existingMessage.message_id,
+            existingMessageDate: existingMessage.message_date.toISOString(),
+            spamWindowMinutes
+          });
+
+          return res.status(409).json({
+            error: 'Duplicate message detected',
+            message: `This sender has already posted the same message in this group within the past ${spamWindowMinutes} minutes`
+          });
+        }
       }
     }
     
