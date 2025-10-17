@@ -22,7 +22,7 @@ export const reactionController = {
     
     const [reactions, total] = await Promise.all([
       Reaction.find(query)
-        .sort({ at: -1 })
+        .sort({ message_date: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
       Reaction.countDocuments(query)
@@ -58,12 +58,21 @@ export const reactionController = {
 
   // Create new reaction
   create: handleAsyncError(async (req, res) => {
-    const reaction = new Reaction(req.body);
+    const payload = { ...req.body };
+
+    if (payload.at && !payload.message_date) {
+      payload.message_date = payload.at;
+    }
+
+    delete payload.at;
+
+    const reaction = new Reaction(payload);
     await reaction.save();
-    
+
     // Record analytics
     if (reaction.user_id && reaction.emoji) {
-      await recordReaction(reaction.user_id, reaction.emoji, reaction.at);
+      const reactionTimestamp = reaction.message_date || reaction.at || new Date();
+      await recordReaction(reaction.user_id, reaction.emoji, reactionTimestamp);
       
       // Update username in analytics if provided
       if (reaction.username) {
@@ -91,7 +100,15 @@ export const reactionController = {
       return res.status(400).json({ error: 'Invalid reaction ID' });
     }
 
-    const reaction = await Reaction.findByIdAndUpdate(id, req.body, {
+    const updatePayload = { ...req.body };
+
+    if (updatePayload.at && !updatePayload.message_date) {
+      updatePayload.message_date = updatePayload.at;
+    }
+
+    delete updatePayload.at;
+
+    const reaction = await Reaction.findByIdAndUpdate(id, updatePayload, {
       new: true,
       runValidators: true
     });
@@ -103,20 +120,29 @@ export const reactionController = {
     res.json(reaction);
   }),
 
-  // Delete reaction
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Delete reactions by message id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { messageId } = req.params;
+    const numericMessageId = Number(messageId);
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid reaction ID' });
+    if (!Number.isFinite(numericMessageId)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    const reaction = await Reaction.findByIdAndDelete(id);
+    const deletionResult = await Reaction.deleteMany({ message_id: numericMessageId });
 
-    if (!reaction) {
-      return res.status(404).json({ error: 'Reaction not found' });
+    if (!deletionResult.deletedCount) {
+      return res.status(404).json({ error: 'No reactions found for the provided message ID' });
     }
 
-    res.json({ message: 'Reaction deleted successfully' });
+    reactionLogger.info('Deleted reactions for message', {
+      messageId: numericMessageId,
+      deletedCount: deletionResult.deletedCount
+    });
+
+    res.json({
+      message: 'Reactions deleted successfully',
+      deletedCount: deletionResult.deletedCount
+    });
   })
 };

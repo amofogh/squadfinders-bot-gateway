@@ -1,0 +1,268 @@
+:root {
+  --sf-admin-bg: #f8f9fa;
+  --sf-admin-bg-secondary: #eef2ff;
+  --sf-admin-card-bg: #ffffff;
+  --sf-admin-border: #e2e8f0;
+  --sf-admin-text: #1f2937;
+  --sf-admin-text-muted: #4b5563;
+  --sf-admin-sidebar-bg: #ffffff;
+  --sf-admin-topbar-bg: #ffffff;
+  --sf-admin-control-bg: #ffffff;
+  --sf-admin-control-text: #1f2937;
+  --sf-admin-accent: #6366f1;
+}
+
+:root[data-admin-theme='dark'] {
+  --sf-admin-bg: #020617;
+  --sf-admin-bg-secondary: #0f172a;
+  --sf-admin-card-bg: #111827;
+  --sf-admin-border: #1f2937;
+  --sf-admin-text: #e2e8f0;
+  --sf-admin-text-muted: #cbd5f5;
+  --sf-admin-sidebar-bg: #020617;
+  --sf-admin-topbar-bg: #020617;
+  --sf-admin-control-bg: #1f2937;
+  --sf-admin-control-text: #e2e8f0;
+  --sf-admin-accent: #6366f1;
+}
+
+body {
+  background-color: var(--sf-admin-bg);
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'],
+body.sf-dark-theme {
+  background-color: var(--sf-admin-bg);
+}
+
+body[data-admin-theme='dark'] a,
+body.sf-dark-theme a {
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_App,
+body.sf-dark-theme .adminjs_App {
+  background-color: var(--sf-admin-bg-secondary);
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Box,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_DropDown,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Panel,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Table,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableRow,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableCell,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableHeadCell,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Card,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_StyledCard,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_BoxWrapper,
+body.sf-dark-theme .adminjs_App .adminjs_Box,
+body.sf-dark-theme .adminjs_App .adminjs_DropDown,
+body.sf-dark-theme .adminjs_App .adminjs_Panel,
+body.sf-dark-theme .adminjs_App .adminjs_Table,
+body.sf-dark-theme .adminjs_App .adminjs_TableRow,
+body.sf-dark-theme .adminjs_App .adminjs_TableCell,
+body.sf-dark-theme .adminjs_App .adminjs_TableHeadCell,
+body.sf-dark-theme .adminjs_App .adminjs_Card,
+body.sf-dark-theme .adminjs_App .adminjs_StyledCard,
+body.sf-dark-theme .adminjs_App .adminjs_BoxWrapper {
+  background-color: var(--sf-admin-card-bg);
+  color: var(--sf-admin-text);
+  border-color: var(--sf-admin-border);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableRow,
+body.sf-dark-theme .adminjs_App .adminjs_TableRow {
+  border-bottom-color: var(--sf-admin-border);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableRow:nth-child(even),
+body.sf-dark-theme .adminjs_App .adminjs_TableRow:nth-child(even) {
+  background-color: rgba(99, 102, 241, 0.06);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableRow:hover,
+body.sf-dark-theme .adminjs_App .adminjs_TableRow:hover {
+  background-color: rgba(99, 102, 241, 0.12);
+}
+
+body[data-admin-theme='dark'] .adminjs_Navigation,
+body.sf-dark-theme .adminjs_Navigation {
+  background-color: var(--sf-admin-sidebar-bg);
+  border-right: 1px solid var(--sf-admin-border);
+}
+
+body[data-admin-theme='dark'] .adminjs_Nav,
+body.sf-dark-theme .adminjs_Nav {
+  background-color: transparent;
+}
+
+body[data-admin-theme='dark'] .adminjs_Navigation a,
+body[data-admin-theme='dark'] .adminjs_Navigation span,
+body.sf-dark-theme .adminjs_Navigation a,
+body.sf-dark-theme .adminjs_Navigation span {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_Navigation a:hover,
+body.sf-dark-theme .adminjs_Navigation a:hover {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_TopBar,
+body.sf-dark-theme .adminjs_TopBar {
+  background-color: var(--sf-admin-topbar-bg);
+  border-bottom: 1px solid var(--sf-admin-border);
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_Header,
+body.sf-dark-theme .adminjs_Header {
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_App button,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Button,
+body.sf-dark-theme .adminjs_App button,
+body.sf-dark-theme .adminjs_App .adminjs_Button {
+  background-color: var(--sf-admin-accent);
+  color: #f8fafc;
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+body[data-admin-theme='dark'] .adminjs_App button:focus,
+body[data-admin-theme='dark'] .adminjs_App button:hover,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Button:focus,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Button:hover,
+body.sf-dark-theme .adminjs_App button:focus,
+body.sf-dark-theme .adminjs_App button:hover,
+body.sf-dark-theme .adminjs_App .adminjs_Button:focus,
+body.sf-dark-theme .adminjs_App .adminjs_Button:hover {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+  background-color: #4f46e5;
+}
+
+body[data-admin-theme='dark'] .adminjs_App input,
+body[data-admin-theme='dark'] .adminjs_App select,
+body[data-admin-theme='dark'] .adminjs_App textarea,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Input,
+body[data-admin-theme='dark'] .adminjs_App .adminjs_ComboBox__input,
+body.sf-dark-theme .adminjs_App input,
+body.sf-dark-theme .adminjs_App select,
+body.sf-dark-theme .adminjs_App textarea,
+body.sf-dark-theme .adminjs_App .adminjs_Input,
+body.sf-dark-theme .adminjs_App .adminjs_ComboBox__input {
+  background-color: var(--sf-admin-control-bg);
+  color: var(--sf-admin-control-text);
+  border-color: var(--sf-admin-border);
+}
+
+body[data-admin-theme='dark'] .adminjs_App input::placeholder,
+body[data-admin-theme='dark'] .adminjs_App textarea::placeholder,
+body.sf-dark-theme .adminjs_App input::placeholder,
+body.sf-dark-theme .adminjs_App textarea::placeholder {
+  color: rgba(203, 213, 225, 0.6);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Badge,
+body.sf-dark-theme .adminjs_App .adminjs_Badge {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: var(--sf-admin-text);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Label,
+body.sf-dark-theme .adminjs_App .adminjs_Label {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_Login,
+body.sf-dark-theme .adminjs_Login {
+  background-color: var(--sf-admin-bg);
+}
+
+body[data-admin-theme='dark'] .adminjs_Login__Image,
+body.sf-dark-theme .adminjs_Login__Image {
+  display: none;
+}
+
+body[data-admin-theme='dark'] .adminjs_Login__Container,
+body.sf-dark-theme .adminjs_Login__Container {
+  background-color: var(--sf-admin-card-bg);
+  border: 1px solid var(--sf-admin-border);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.45);
+}
+
+body[data-admin-theme='dark'] .adminjs_Text,
+body.sf-dark-theme .adminjs_Text {
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_H5,
+body.sf-dark-theme .adminjs_H5,
+body[data-admin-theme='dark'] .adminjs_H3,
+body.sf-dark-theme .adminjs_H3 {
+  color: var(--sf-admin-text);
+}
+
+body[data-admin-theme='dark'] .adminjs_BreadcrumbLink,
+body.sf-dark-theme .adminjs_BreadcrumbLink {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_RecordsTable__Row--selected,
+body.sf-dark-theme .adminjs_RecordsTable__Row--selected {
+  background-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+body[data-admin-theme='dark'] .adminjs_Tag,
+body.sf-dark-theme .adminjs_Tag {
+  background-color: rgba(99, 102, 241, 0.18);
+  color: var(--sf-admin-text);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_TableHead,
+body.sf-dark-theme .adminjs_App .adminjs_TableHead {
+  background-color: var(--sf-admin-bg-secondary);
+  color: var(--sf-admin-text);
+  border-bottom: 1px solid var(--sf-admin-border);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Box .adminjs_Text,
+body.sf-dark-theme .adminjs_App .adminjs_Box .adminjs_Text {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Box a,
+body.sf-dark-theme .adminjs_App .adminjs_Box a {
+  color: var(--sf-admin-accent);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Box a:hover,
+body.sf-dark-theme .adminjs_App .adminjs_Box a:hover {
+  color: #818cf8;
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_InputWrapper svg,
+body.sf-dark-theme .adminjs_App .adminjs_InputWrapper svg {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_Select__indicator,
+body.sf-dark-theme .adminjs_App .adminjs_Select__indicator {
+  color: var(--sf-admin-text-muted);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_InfoBox,
+body.sf-dark-theme .adminjs_App .adminjs_InfoBox {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(129, 140, 248, 0.25));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+body[data-admin-theme='dark'] .adminjs_App .adminjs_InfoBox p,
+body.sf-dark-theme .adminjs_App .adminjs_InfoBox p {
+  color: var(--sf-admin-text);
+}

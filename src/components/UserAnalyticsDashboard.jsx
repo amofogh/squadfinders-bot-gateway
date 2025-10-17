@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const MAIN_DASHBOARD_PATH = '/admin';
 const USER_ANALYTICS_PATH = '/admin/pages/user-analytics';
+const THEME_STORAGE_KEY = 'sf-admin-theme';
+const LEGACY_THEME_KEYS = ['sf-dashboard-theme', 'sf-analytics-theme'];
 
 const UserAnalyticsDashboard = () => {
   const [insights, setInsights] = useState(null);
@@ -13,6 +15,142 @@ const UserAnalyticsDashboard = () => {
   const refreshIntervalRef = useRef(null);
   const chartRef = useRef(null);
   const [activityRange, setActivityRange] = useState(30);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const themeManager = window.__squadfindersAdminTheme;
+    const storedPreference = themeManager?.getStoredTheme?.();
+    let usingSystemPreference = false;
+
+    if (storedPreference === 'dark' || storedPreference === 'light') {
+      setIsDarkMode(storedPreference === 'dark');
+    } else {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(Boolean(prefersDark));
+      usingSystemPreference = true;
+    }
+
+    const handleThemeChange = (event) => {
+      const themeValue = event?.detail?.theme;
+      if (themeValue === 'dark' || themeValue === 'light') {
+        setIsDarkMode(themeValue === 'dark');
+      }
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === THEME_STORAGE_KEY && (event.newValue === 'dark' || event.newValue === 'light')) {
+        setIsDarkMode(event.newValue === 'dark');
+      }
+
+      if (LEGACY_THEME_KEYS.includes(event.key) && (event.newValue === 'dark' || event.newValue === 'light')) {
+        setIsDarkMode(event.newValue === 'dark');
+      }
+    };
+
+    window.addEventListener('sf-admin-theme-change', handleThemeChange);
+    window.addEventListener('storage', handleStorage);
+
+    const mediaQuery = usingSystemPreference && window.matchMedia
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null;
+
+    let handlePreferenceChange;
+
+    if (mediaQuery) {
+      handlePreferenceChange = (event) => {
+        setIsDarkMode(event.matches);
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handlePreferenceChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handlePreferenceChange);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('sf-admin-theme-change', handleThemeChange);
+      window.removeEventListener('storage', handleStorage);
+
+      if (mediaQuery && handlePreferenceChange) {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handlePreferenceChange);
+        } else if (mediaQuery.removeListener) {
+          mediaQuery.removeListener(handlePreferenceChange);
+        }
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const themeValue = isDarkMode ? 'dark' : 'light';
+    const themeManager = window.__squadfindersAdminTheme;
+
+    if (themeManager?.applyTheme) {
+      themeManager.applyTheme(themeValue);
+    } else {
+      const root = document.documentElement;
+      if (root) {
+        root.setAttribute('data-admin-theme', themeValue);
+        root.classList.toggle('sf-dark-theme', isDarkMode);
+      }
+
+      if (document.body) {
+        document.body.setAttribute('data-admin-theme', themeValue);
+        document.body.classList.toggle('sf-dark-theme', isDarkMode);
+      }
+
+      try {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, themeValue);
+        LEGACY_THEME_KEYS.forEach((key) => window.localStorage?.removeItem(key));
+      } catch (error) {
+        // Ignore storage errors (e.g., private browsing)
+      }
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+
+      if (typeof window !== 'undefined') {
+        const themeValue = next ? 'dark' : 'light';
+        const themeManager = window.__squadfindersAdminTheme;
+
+        if (themeManager?.setTheme) {
+          themeManager.setTheme(themeValue);
+        } else {
+          try {
+            window.localStorage?.setItem(THEME_STORAGE_KEY, themeValue);
+            LEGACY_THEME_KEYS.forEach((key) => window.localStorage?.removeItem(key));
+          } catch (error) {
+            // Ignore storage errors
+          }
+
+          const root = document.documentElement;
+          if (root) {
+            root.setAttribute('data-admin-theme', themeValue);
+            root.classList.toggle('sf-dark-theme', next);
+          }
+
+          if (document.body) {
+            document.body.setAttribute('data-admin-theme', themeValue);
+            document.body.classList.toggle('sf-dark-theme', next);
+          }
+        }
+      }
+
+      return next;
+    });
+  };
 
   const fetchData = async (range = activityRange) => {
     try {
@@ -200,6 +338,58 @@ const UserAnalyticsDashboard = () => {
     { label: '90d', value: 90 }
   ], []);
 
+  const themeClassName = `sf-analytics${isDarkMode ? ' dark' : ''}`;
+  const themeStyles = `
+    .sf-analytics {
+      --sf-bg: #f8f9fa;
+      --sf-card-bg: #ffffff;
+      --sf-card-bg-active: #eef2ff;
+      --sf-border: #e2e8f0;
+      --sf-text-primary: #1f2937;
+      --sf-text-secondary: #4b5563;
+      --sf-text-muted: #6b7280;
+      --sf-button-bg: #667eea;
+      --sf-button-text: #ffffff;
+      --sf-button-border: #5a67d8;
+      --sf-input-bg: #ffffff;
+      --sf-input-border: #d1d5db;
+      --sf-card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      --sf-card-shadow-strong: 0 8px 15px rgba(0,0,0,0.15);
+      --sf-nav-text: #1f2937;
+      --sf-chip-bg: rgba(102, 126, 234, 0.12);
+      --sf-chip-border: rgba(102, 126, 234, 0.3);
+    }
+
+    .sf-analytics.dark {
+      --sf-bg: #0f172a;
+      --sf-card-bg: #111827;
+      --sf-card-bg-active: #1e293b;
+      --sf-border: #1f2937;
+      --sf-text-primary: #e2e8f0;
+      --sf-text-secondary: #cbd5f5;
+      --sf-text-muted: #94a3b8;
+      --sf-button-bg: #4f46e5;
+      --sf-button-text: #f8fafc;
+      --sf-button-border: #4338ca;
+      --sf-input-bg: #1f2937;
+      --sf-input-border: #374151;
+      --sf-card-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
+      --sf-card-shadow-strong: 0 12px 30px rgba(59, 130, 246, 0.35);
+      --sf-nav-text: #e2e8f0;
+      --sf-chip-bg: rgba(99, 102, 241, 0.2);
+      --sf-chip-border: rgba(99, 102, 241, 0.35);
+    }
+
+    .sf-analytics button:hover {
+      filter: brightness(1.05);
+    }
+  `;
+
+  const styleElement = React.createElement('style', {
+    key: 'styles'
+  }, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+${themeStyles}`);
+
   const reactionRate = useMemo(() => {
     if (!insights || !insights.avg_msgs) return 0;
     return (insights.avg_reacts || 0) / (insights.avg_msgs || 1);
@@ -220,18 +410,38 @@ const UserAnalyticsDashboard = () => {
   }, [dailyStats]);
 
   if (loading) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#f8f9fa', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, [
+    return React.createElement('div', {
+      className: themeClassName,
+      style: { padding: '40px', textAlign: 'center', backgroundColor: 'var(--sf-bg)', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, [
+      styleElement,
       React.createElement('div', { key: 'loader' }, [
-        React.createElement('div', { key: 'spinner', style: { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' } }),
-        React.createElement('h2', { key: 'text', style: { color: '#666', margin: 0 } }, 'Loading User Analytics...')
+        React.createElement('div', { key: 'spinner', style: { width: '40px', height: '40px', border: '4px solid rgba(148, 163, 184, 0.3)', borderTop: '4px solid var(--sf-button-bg)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' } }),
+        React.createElement('h2', { key: 'text', style: { color: 'var(--sf-text-secondary)', margin: 0 } }, 'Loading User Analytics...')
       ])
     ]);
   }
 
   if (error) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '8px', margin: '20px', color: '#c53030' } }, [
-      React.createElement('h2', { key: 'title', style: { marginBottom: '10px' } }, 'Analytics Error'),
-      React.createElement('p', { key: 'message', style: { margin: 0 } }, error)
+    return React.createElement('div', {
+      className: themeClassName,
+      style: { padding: '40px', textAlign: 'center', backgroundColor: 'var(--sf-bg)', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, [
+      styleElement,
+      React.createElement('div', {
+        key: 'error-card',
+        style: {
+          backgroundColor: 'var(--sf-card-bg)',
+          border: '1px solid var(--sf-border)',
+          borderRadius: '12px',
+          padding: '30px',
+          boxShadow: 'var(--sf-card-shadow)',
+          maxWidth: '420px'
+        }
+      }, [
+        React.createElement('h2', { key: 'title', style: { marginBottom: '10px', color: 'var(--sf-text-primary)' } }, 'Analytics Error'),
+        React.createElement('p', { key: 'message', style: { margin: 0, color: 'var(--sf-text-secondary)' } }, error)
+      ])
     ]);
   }
 
@@ -243,6 +453,14 @@ const UserAnalyticsDashboard = () => {
       color: '#667eea',
       icon: '👥',
       subtitle: 'Registered users'
+    },
+    {
+      key: 'total-players',
+      title: 'Total Players',
+      value: insights?.total_players_count || 0,
+      color: '#5b21b6',
+      icon: '🎮',
+      subtitle: 'Players recorded across squads'
     },
     {
       key: 'cancel-rate',
@@ -298,12 +516,12 @@ const UserAnalyticsDashboard = () => {
       isDecimal: true
     },
     {
-      key: 'reaction-rate',
-      title: 'Reaction Rate',
-      value: `${reactionRate.toFixed(2)} reactions/message`,
+      key: 'total-reactions',
+      title: 'Total Reactions',
+      value: (insights?.total_reactions || 0).toLocaleString(),
       color: '#e91e63',
       icon: '💖',
-      subtitle: 'Average reactions per message',
+      subtitle: 'Reactions recorded across all users',
       isDecimal: false
     },
     {
@@ -330,9 +548,9 @@ const UserAnalyticsDashboard = () => {
     key: range.value,
     onClick: () => setActivityRange(range.value),
     style: {
-      background: activityRange === range.value ? '#667eea' : '#f8f9fa',
-      color: activityRange === range.value ? 'white' : '#333',
-      border: '1px solid #e2e8f0',
+      background: activityRange === range.value ? 'var(--sf-button-bg)' : 'var(--sf-card-bg)',
+      color: activityRange === range.value ? 'var(--sf-button-text)' : 'var(--sf-text-primary)',
+      border: '1px solid var(--sf-border)',
       padding: '8px 12px',
       marginLeft: '5px',
       borderRadius: '6px',
@@ -341,13 +559,27 @@ const UserAnalyticsDashboard = () => {
     }
   }, range.label));
 
-  return React.createElement('div', { style: { padding: '20px', backgroundColor: '#f8f9fa', minHeight: '100vh' } }, [
-    React.createElement('style', { key: 'styles' }, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`),
+  return React.createElement('div', { className: themeClassName, style: { padding: '20px', backgroundColor: 'var(--sf-bg)', minHeight: '100vh', color: 'var(--sf-text-primary)' } }, [
+    styleElement,
 
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' } }, [
-      React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' } }, 'User Analytics Dashboard'),
+      React.createElement('h1', { key: 'title', style: { margin: 0, color: 'var(--sf-text-primary)', fontSize: '28px', fontWeight: 'bold' } }, 'User Analytics Dashboard'),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' } }, [
-        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' } }, [
+        React.createElement('button', {
+          key: 'theme-toggle',
+          onClick: toggleTheme,
+          style: {
+            background: 'var(--sf-card-bg-active)',
+            color: 'var(--sf-text-primary)',
+            border: '1px solid var(--sf-border)',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
+          }
+        }, isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'),
+        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--sf-text-secondary)' } }, [
           React.createElement('input', {
             key: 'refresh-checkbox',
             type: 'checkbox',
@@ -361,7 +593,7 @@ const UserAnalyticsDashboard = () => {
           key: 'refresh-interval',
           value: refreshInterval,
           onChange: (e) => setRefreshInterval(parseInt(e.target.value, 10)),
-          style: { padding: '6px 10px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '14px' }
+          style: { padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--sf-input-border)', background: 'var(--sf-input-bg)', color: 'var(--sf-text-primary)', fontSize: '14px' }
         }, refreshIntervals.map(interval =>
           React.createElement('option', { key: interval.value, value: interval.value }, interval.label)
         )),
@@ -369,9 +601,9 @@ const UserAnalyticsDashboard = () => {
           key: 'manual-refresh',
           onClick: () => fetchData(activityRange),
           style: {
-            background: '#667eea',
-            color: 'white',
-            border: 'none',
+            background: 'var(--sf-button-bg)',
+            color: 'var(--sf-button-text)',
+            border: '1px solid var(--sf-button-border)',
             padding: '8px 16px',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -412,9 +644,9 @@ const UserAnalyticsDashboard = () => {
       }))
     ),
 
-    React.createElement('div', { key: 'chart-container', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', marginBottom: '30px' } }, [
+    React.createElement('div', { key: 'chart-container', style: { backgroundColor: 'var(--sf-card-bg)', padding: '25px', borderRadius: '12px', boxShadow: 'var(--sf-card-shadow)', border: '1px solid var(--sf-border)', marginBottom: '30px' } }, [
       React.createElement('div', { key: 'chart-header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' } }, [
-        React.createElement('h3', { key: 'chart-title', style: { color: '#333', fontSize: '18px', fontWeight: '600', margin: 0 } }, 'Daily User Activity'),
+        React.createElement('h3', { key: 'chart-title', style: { color: 'var(--sf-text-primary)', fontSize: '18px', fontWeight: '600', margin: 0 } }, 'Daily User Activity'),
         React.createElement('div', { key: 'range-buttons' }, rangeButtons)
       ]),
       React.createElement('div', { key: 'canvas-container', style: { height: '400px', position: 'relative' } },
@@ -423,9 +655,9 @@ const UserAnalyticsDashboard = () => {
     ]),
 
     React.createElement('div', { key: 'insights-grid', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' } }, [
-      React.createElement('div', { key: 'engagement-card', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' } }, [
-        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' } }, 'User Engagement'),
-        React.createElement('p', { key: 'help-text', style: { fontSize: '14px', color: '#666', marginBottom: '20px', fontStyle: 'italic' } },
+      React.createElement('div', { key: 'engagement-card', style: { backgroundColor: 'var(--sf-card-bg)', padding: '25px', borderRadius: '12px', boxShadow: 'var(--sf-card-shadow)', border: '1px solid var(--sf-border)' } }, [
+        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: 'var(--sf-text-primary)', fontSize: '18px', fontWeight: '600' } }, 'User Engagement'),
+        React.createElement('p', { key: 'help-text', style: { fontSize: '14px', color: 'var(--sf-text-secondary)', marginBottom: '20px', fontStyle: 'italic' } },
           'Understand how often users chat, react, and connect with each other so you can spot healthy communities or users who may need support.'
         ),
         React.createElement('div', { key: 'engagement-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' } }, [
@@ -449,8 +681,8 @@ const UserAnalyticsDashboard = () => {
           })
         ])
       ]),
-      React.createElement('div', { key: 'health-card', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' } }, [
-        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' } }, 'Platform Health'),
+      React.createElement('div', { key: 'health-card', style: { backgroundColor: 'var(--sf-card-bg)', padding: '25px', borderRadius: '12px', boxShadow: 'var(--sf-card-shadow)', border: '1px solid var(--sf-border)' } }, [
+        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: 'var(--sf-text-primary)', fontSize: '18px', fontWeight: '600' } }, 'Platform Health'),
         React.createElement('div', { key: 'health-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' } }, [
           React.createElement(InsightRow, {
             key: 'active-users',
@@ -482,7 +714,7 @@ const UserAnalyticsDashboard = () => {
   ]);
 };
 
-const InsightRow = ({ label, value, color, background = '#f8f9fa', borderColor = '#e2e8f0' }) => (
+const InsightRow = ({ label, value, color, background = 'var(--sf-card-bg)', borderColor = 'var(--sf-border)' }) => (
   React.createElement('div', {
     style: {
       display: 'flex',
@@ -494,7 +726,7 @@ const InsightRow = ({ label, value, color, background = '#f8f9fa', borderColor =
       border: `1px solid ${borderColor}`
     }
   }, [
-    React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#555' } }, label),
+    React.createElement('span', { key: 'label', style: { fontWeight: '500', color: 'var(--sf-text-secondary)' } }, label),
     React.createElement('span', { key: 'value', style: { fontWeight: 'bold', color } }, value)
   ])
 );
@@ -506,11 +738,11 @@ const MetricBox = ({ title, value, color, icon, subtitle, isDecimal = false }) =
 
   return React.createElement('div', {
     style: {
-      backgroundColor: 'white',
+      backgroundColor: 'var(--sf-card-bg)',
       padding: '20px',
       borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      border: '1px solid #e2e8f0',
+      boxShadow: 'var(--sf-card-shadow)',
+      border: '1px solid var(--sf-border)',
       borderLeft: `4px solid ${color}`,
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       cursor: 'pointer'
@@ -518,20 +750,20 @@ const MetricBox = ({ title, value, color, icon, subtitle, isDecimal = false }) =
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-2px)';
-      target.style.boxShadow = '0 8px 15px rgba(0,0,0,0.15)';
+      target.style.boxShadow = 'var(--sf-card-shadow-strong)';
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+      target.style.boxShadow = 'var(--sf-card-shadow)';
     }
   }, [
     React.createElement('div', { key: 'header', style: { display: 'flex', alignItems: 'center', marginBottom: '12px' } }, [
       React.createElement('span', { key: 'icon', style: { fontSize: '20px', marginRight: '8px' } }, icon),
-      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: '#666', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' } }, title)
+      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: 'var(--sf-text-muted)', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' } }, title)
     ]),
     React.createElement('div', { key: 'value', style: { fontSize: '24px', fontWeight: 'bold', color, lineHeight: '1', marginBottom: '4px' } }, displayValue),
-    React.createElement('div', { key: 'subtitle', style: { fontSize: '11px', color: '#888', fontWeight: '400' } }, subtitle)
+    React.createElement('div', { key: 'subtitle', style: { fontSize: '11px', color: 'var(--sf-text-secondary)', fontWeight: '400' } }, subtitle)
   ]);
 };
 
@@ -542,10 +774,10 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     gap: '8px',
     padding: '20px',
     borderRadius: '12px',
-    border: '1px solid #e2e8f0',
-    backgroundColor: active ? '#eef2ff' : 'white',
-    boxShadow: active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)',
-    color: '#1f2937',
+    border: '1px solid var(--sf-border)',
+    backgroundColor: active ? 'var(--sf-card-bg-active)' : 'var(--sf-card-bg)',
+    boxShadow: active ? 'var(--sf-card-shadow-strong)' : 'var(--sf-card-shadow)',
+    color: 'var(--sf-nav-text)',
     textDecoration: 'none',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     cursor: 'pointer'
@@ -557,17 +789,17 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-3px)';
-      target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.25)';
+      target.style.boxShadow = 'var(--sf-card-shadow-strong)';
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)';
+      target.style.boxShadow = active ? 'var(--sf-card-shadow-strong)' : 'var(--sf-card-shadow)';
     }
   }, [
     React.createElement('div', { key: 'icon', style: { fontSize: '24px' } }, icon),
     React.createElement('div', { key: 'label', style: { fontWeight: '600', fontSize: '16px' } }, label),
-    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: '#4b5563' } }, description)
+    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: 'var(--sf-text-secondary)' } }, description)
   ]);
 };
 
