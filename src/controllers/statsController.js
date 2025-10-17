@@ -1,4 +1,5 @@
 import { Player } from '../models/Player.js';
+import { Reaction } from '../models/Reaction.js';
 import { UserAnalytics } from '../models/UserAnalytics.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
 import { createServiceLogger } from '../utils/logger.js';
@@ -28,7 +29,7 @@ export const statsController = {
   getInsights: handleAsyncError(async (req, res) => {
     statsLogger.info('Fetching global insights');
     
-    const [insights, playerTotals] = await Promise.all([
+    const [insights, playerTotals, totalReactionsCount] = await Promise.all([
       UserAnalytics.aggregate([
         {
           $group: {
@@ -82,23 +83,26 @@ export const statsController = {
             }
           }
         }
-      ])
+      ]),
+      Reaction.countDocuments()
     ]);
 
     const result = {
       total_players_count: playerTotals[0]?.total_players_count || 0,
       ...(insights[0] || {
-      total_users: 0,
-      avg_dm_sent: 0,
-      avg_lost_due_cancel: 0,
-      avg_msgs: 0,
-      avg_reacts: 0,
-      total_reactions: 0,
-      avg_player: 0,
-      cancel_rate: 0,
-      canceled_users: 0
-    })
+        total_users: 0,
+        avg_dm_sent: 0,
+        avg_lost_due_cancel: 0,
+        avg_msgs: 0,
+        avg_reacts: 0,
+        total_reactions: 0,
+        avg_player: 0,
+        cancel_rate: 0,
+        canceled_users: 0
+      })
     };
+
+    result.total_reactions = totalReactionsCount || 0;
 
     res.json(result);
   }),

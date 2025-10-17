@@ -639,12 +639,26 @@ export const adminJS = new AdminJS({
     companyName: 'SquadFinders',
     logo: false,
     theme: {
+      dark: true,
       colors: {
-        primary100: '#667eea',
-        primary80: '#764ba2',
-        primary60: '#f093fb',
-        primary40: '#4facfe',
-        primary20: '#00f2fe'
+        primary100: '#6366f1',
+        primary80: '#4f46e5',
+        primary60: '#4338ca',
+        primary40: '#312e81',
+        primary20: '#1e1b4b',
+        accent: '#a855f7',
+        success: '#22c55e',
+        info: '#38bdf8',
+        danger: '#ef4444',
+        warning: '#f97316',
+        bg: '#020617',
+        bg2: '#0f172a',
+        layoutHeaderBg: '#020617',
+        layoutHeaderText: '#e2e8f0',
+        text: '#e2e8f0',
+        textLight: '#cbd5f5',
+        border: '#1f2937',
+        hoverBg: '#1e293b'
       }
     }
   }
