@@ -23,6 +23,24 @@ const LIGHT_THEME = {
   navText: '#1f2937'
 };
 
+const LIGHT_THEME = {
+  background: '#f8f9fa',
+  cardBackground: '#ffffff',
+  cardBackgroundActive: '#eef2ff',
+  border: '#e2e8f0',
+  textPrimary: '#1f2937',
+  textSecondary: '#4b5563',
+  textMuted: '#6b7280',
+  buttonBackground: '#667eea',
+  buttonText: '#ffffff',
+  buttonBorder: '#5a67d8',
+  inputBackground: '#ffffff',
+  inputBorder: '#d1d5db',
+  cardShadow: '0 4px 6px rgba(0,0,0,0.1)',
+  cardShadowStrong: '0 8px 15px rgba(0,0,0,0.15)',
+  navText: '#1f2937'
+};
+
 const UserAnalyticsDashboard = () => {
   const [insights, setInsights] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
