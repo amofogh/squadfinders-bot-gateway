@@ -146,7 +146,7 @@ router.get('/valid-since', authMiddleware, authorizeRole(['superadmin', 'admin',
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
- *     description: Returns valid messages with pending AI status that are less than the configured expiry window old, sorted by creation date (oldest first). Automatically marks returned messages as 'processing'.
+ *     description: Returns messages with pending AI status that are less than the configured expiry window old, sorted by creation date (oldest first). Automatically marks returned messages as 'processing'.
  *     parameters:
  *       - in: query
  *         name: limit

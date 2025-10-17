@@ -434,7 +434,7 @@ export const adminJS = new AdminJS({
           icon: 'Heart'
         },
         sort: {
-          sortBy: 'at',
+          sortBy: 'message_date',
           direction: 'desc'
         },
         listProperties: [
@@ -444,7 +444,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at'
+          'message_date'
         ],
         filterProperties: [
           'user_id',
@@ -453,7 +453,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at'
+          'message_date'
         ],
         showProperties: [
           'user_id',
@@ -462,7 +462,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at',
+          'message_date',
           'meta',
           'createdAt',
           'updatedAt'
@@ -637,15 +637,6 @@ export const adminJS = new AdminJS({
   },
   branding: {
     companyName: 'SquadFinders',
-    logo: false,
-    theme: {
-      colors: {
-        primary100: '#667eea',
-        primary80: '#764ba2',
-        primary60: '#f093fb',
-        primary40: '#4facfe',
-        primary20: '#00f2fe'
-      }
-    }
+    logo: false
   }
 });

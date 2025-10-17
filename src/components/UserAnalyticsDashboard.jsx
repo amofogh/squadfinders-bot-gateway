@@ -3,6 +3,24 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 const MAIN_DASHBOARD_PATH = '/admin';
 const USER_ANALYTICS_PATH = '/admin/pages/user-analytics';
 
+const LIGHT_THEME = {
+  background: '#f8f9fa',
+  cardBackground: '#ffffff',
+  cardBackgroundActive: '#eef2ff',
+  border: '#e2e8f0',
+  textPrimary: '#1f2937',
+  textSecondary: '#4b5563',
+  textMuted: '#6b7280',
+  buttonBackground: '#667eea',
+  buttonText: '#ffffff',
+  buttonBorder: '#5a67d8',
+  inputBackground: '#ffffff',
+  inputBorder: '#d1d5db',
+  cardShadow: '0 4px 6px rgba(0,0,0,0.1)',
+  cardShadowStrong: '0 8px 15px rgba(0,0,0,0.15)',
+  navText: '#1f2937'
+};
+
 const UserAnalyticsDashboard = () => {
   const [insights, setInsights] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
@@ -200,6 +218,10 @@ const UserAnalyticsDashboard = () => {
     { label: '90d', value: 90 }
   ], []);
 
+  const styleElement = React.createElement('style', {
+    key: 'styles'
+  }, '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }');
+
   const reactionRate = useMemo(() => {
     if (!insights || !insights.avg_msgs) return 0;
     return (insights.avg_reacts || 0) / (insights.avg_msgs || 1);
@@ -220,18 +242,36 @@ const UserAnalyticsDashboard = () => {
   }, [dailyStats]);
 
   if (loading) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#f8f9fa', minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, [
+    return React.createElement('div', {
+      style: { padding: '40px', textAlign: 'center', backgroundColor: LIGHT_THEME.background, minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, [
+      styleElement,
       React.createElement('div', { key: 'loader' }, [
-        React.createElement('div', { key: 'spinner', style: { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' } }),
-        React.createElement('h2', { key: 'text', style: { color: '#666', margin: 0 } }, 'Loading User Analytics...')
+        React.createElement('div', { key: 'spinner', style: { width: '40px', height: '40px', border: '4px solid rgba(148, 163, 184, 0.3)', borderTop: `4px solid ${LIGHT_THEME.buttonBackground}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' } }),
+        React.createElement('h2', { key: 'text', style: { color: LIGHT_THEME.textSecondary, margin: 0 } }, 'Loading User Analytics...')
       ])
     ]);
   }
 
   if (error) {
-    return React.createElement('div', { style: { padding: '40px', textAlign: 'center', backgroundColor: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '8px', margin: '20px', color: '#c53030' } }, [
-      React.createElement('h2', { key: 'title', style: { marginBottom: '10px' } }, 'Analytics Error'),
-      React.createElement('p', { key: 'message', style: { margin: 0 } }, error)
+    return React.createElement('div', {
+      style: { padding: '40px', textAlign: 'center', backgroundColor: LIGHT_THEME.background, minHeight: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    }, [
+      styleElement,
+      React.createElement('div', {
+        key: 'error-card',
+        style: {
+          backgroundColor: LIGHT_THEME.cardBackground,
+          border: `1px solid ${LIGHT_THEME.border}`,
+          borderRadius: '12px',
+          padding: '30px',
+          boxShadow: LIGHT_THEME.cardShadow,
+          maxWidth: '420px'
+        }
+      }, [
+        React.createElement('h2', { key: 'title', style: { marginBottom: '10px', color: LIGHT_THEME.textPrimary } }, 'Analytics Error'),
+        React.createElement('p', { key: 'message', style: { margin: 0, color: LIGHT_THEME.textSecondary } }, error)
+      ])
     ]);
   }
 
@@ -243,6 +283,14 @@ const UserAnalyticsDashboard = () => {
       color: '#667eea',
       icon: '👥',
       subtitle: 'Registered users'
+    },
+    {
+      key: 'total-players',
+      title: 'Total Players',
+      value: insights?.total_players_count || 0,
+      color: '#5b21b6',
+      icon: '🎮',
+      subtitle: 'Players recorded across squads'
     },
     {
       key: 'cancel-rate',
@@ -298,12 +346,12 @@ const UserAnalyticsDashboard = () => {
       isDecimal: true
     },
     {
-      key: 'reaction-rate',
-      title: 'Reaction Rate',
-      value: `${reactionRate.toFixed(2)} reactions/message`,
+      key: 'total-reactions',
+      title: 'Total Reactions',
+      value: (insights?.total_reactions || 0).toLocaleString(),
       color: '#e91e63',
       icon: '💖',
-      subtitle: 'Average reactions per message',
+      subtitle: 'Reactions recorded across all users',
       isDecimal: false
     },
     {
@@ -330,9 +378,9 @@ const UserAnalyticsDashboard = () => {
     key: range.value,
     onClick: () => setActivityRange(range.value),
     style: {
-      background: activityRange === range.value ? '#667eea' : '#f8f9fa',
-      color: activityRange === range.value ? 'white' : '#333',
-      border: '1px solid #e2e8f0',
+      background: activityRange === range.value ? LIGHT_THEME.buttonBackground : LIGHT_THEME.cardBackground,
+      color: activityRange === range.value ? LIGHT_THEME.buttonText : LIGHT_THEME.textPrimary,
+      border: `1px solid ${LIGHT_THEME.border}`,
       padding: '8px 12px',
       marginLeft: '5px',
       borderRadius: '6px',
@@ -341,13 +389,13 @@ const UserAnalyticsDashboard = () => {
     }
   }, range.label));
 
-  return React.createElement('div', { style: { padding: '20px', backgroundColor: '#f8f9fa', minHeight: '100vh' } }, [
-    React.createElement('style', { key: 'styles' }, `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`),
+  return React.createElement('div', { style: { padding: '20px', backgroundColor: LIGHT_THEME.background, minHeight: '100vh', color: LIGHT_THEME.textPrimary } }, [
+    styleElement,
 
     React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' } }, [
-      React.createElement('h1', { key: 'title', style: { margin: 0, color: '#333', fontSize: '28px', fontWeight: 'bold' } }, 'User Analytics Dashboard'),
+      React.createElement('h1', { key: 'title', style: { margin: 0, color: LIGHT_THEME.textPrimary, fontSize: '28px', fontWeight: 'bold' } }, 'User Analytics Dashboard'),
       React.createElement('div', { key: 'controls', style: { display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' } }, [
-        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#666' } }, [
+        React.createElement('label', { key: 'refresh-label', style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: LIGHT_THEME.textSecondary } }, [
           React.createElement('input', {
             key: 'refresh-checkbox',
             type: 'checkbox',
@@ -361,7 +409,7 @@ const UserAnalyticsDashboard = () => {
           key: 'refresh-interval',
           value: refreshInterval,
           onChange: (e) => setRefreshInterval(parseInt(e.target.value, 10)),
-          style: { padding: '6px 10px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '14px' }
+          style: { padding: '6px 10px', borderRadius: '4px', border: `1px solid ${LIGHT_THEME.inputBorder}`, background: LIGHT_THEME.inputBackground, color: LIGHT_THEME.textPrimary, fontSize: '14px' }
         }, refreshIntervals.map(interval =>
           React.createElement('option', { key: interval.value, value: interval.value }, interval.label)
         )),
@@ -369,9 +417,9 @@ const UserAnalyticsDashboard = () => {
           key: 'manual-refresh',
           onClick: () => fetchData(activityRange),
           style: {
-            background: '#667eea',
-            color: 'white',
-            border: 'none',
+            background: LIGHT_THEME.buttonBackground,
+            color: LIGHT_THEME.buttonText,
+            border: `1px solid ${LIGHT_THEME.buttonBorder}`,
             padding: '8px 16px',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -412,9 +460,9 @@ const UserAnalyticsDashboard = () => {
       }))
     ),
 
-    React.createElement('div', { key: 'chart-container', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', marginBottom: '30px' } }, [
+    React.createElement('div', { key: 'chart-container', style: { backgroundColor: LIGHT_THEME.cardBackground, padding: '25px', borderRadius: '12px', boxShadow: LIGHT_THEME.cardShadow, border: `1px solid ${LIGHT_THEME.border}`, marginBottom: '30px' } }, [
       React.createElement('div', { key: 'chart-header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' } }, [
-        React.createElement('h3', { key: 'chart-title', style: { color: '#333', fontSize: '18px', fontWeight: '600', margin: 0 } }, 'Daily User Activity'),
+        React.createElement('h3', { key: 'chart-title', style: { color: LIGHT_THEME.textPrimary, fontSize: '18px', fontWeight: '600', margin: 0 } }, 'Daily User Activity'),
         React.createElement('div', { key: 'range-buttons' }, rangeButtons)
       ]),
       React.createElement('div', { key: 'canvas-container', style: { height: '400px', position: 'relative' } },
@@ -423,9 +471,9 @@ const UserAnalyticsDashboard = () => {
     ]),
 
     React.createElement('div', { key: 'insights-grid', style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' } }, [
-      React.createElement('div', { key: 'engagement-card', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' } }, [
-        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' } }, 'User Engagement'),
-        React.createElement('p', { key: 'help-text', style: { fontSize: '14px', color: '#666', marginBottom: '20px', fontStyle: 'italic' } },
+      React.createElement('div', { key: 'engagement-card', style: { backgroundColor: LIGHT_THEME.cardBackground, padding: '25px', borderRadius: '12px', boxShadow: LIGHT_THEME.cardShadow, border: `1px solid ${LIGHT_THEME.border}` } }, [
+        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: LIGHT_THEME.textPrimary, fontSize: '18px', fontWeight: '600' } }, 'User Engagement'),
+        React.createElement('p', { key: 'help-text', style: { fontSize: '14px', color: LIGHT_THEME.textSecondary, marginBottom: '20px', fontStyle: 'italic' } },
           'Understand how often users chat, react, and connect with each other so you can spot healthy communities or users who may need support.'
         ),
         React.createElement('div', { key: 'engagement-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' } }, [
@@ -449,8 +497,8 @@ const UserAnalyticsDashboard = () => {
           })
         ])
       ]),
-      React.createElement('div', { key: 'health-card', style: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' } }, [
-        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: '#333', fontSize: '18px', fontWeight: '600' } }, 'Platform Health'),
+      React.createElement('div', { key: 'health-card', style: { backgroundColor: LIGHT_THEME.cardBackground, padding: '25px', borderRadius: '12px', boxShadow: LIGHT_THEME.cardShadow, border: `1px solid ${LIGHT_THEME.border}` } }, [
+        React.createElement('h3', { key: 'title', style: { marginBottom: '20px', color: LIGHT_THEME.textPrimary, fontSize: '18px', fontWeight: '600' } }, 'Platform Health'),
         React.createElement('div', { key: 'health-stats', style: { display: 'flex', flexDirection: 'column', gap: '15px' } }, [
           React.createElement(InsightRow, {
             key: 'active-users',
@@ -482,7 +530,7 @@ const UserAnalyticsDashboard = () => {
   ]);
 };
 
-const InsightRow = ({ label, value, color, background = '#f8f9fa', borderColor = '#e2e8f0' }) => (
+const InsightRow = ({ label, value, color, background = LIGHT_THEME.cardBackground, borderColor = LIGHT_THEME.border }) => (
   React.createElement('div', {
     style: {
       display: 'flex',
@@ -494,7 +542,7 @@ const InsightRow = ({ label, value, color, background = '#f8f9fa', borderColor =
       border: `1px solid ${borderColor}`
     }
   }, [
-    React.createElement('span', { key: 'label', style: { fontWeight: '500', color: '#555' } }, label),
+    React.createElement('span', { key: 'label', style: { fontWeight: '500', color: LIGHT_THEME.textSecondary } }, label),
     React.createElement('span', { key: 'value', style: { fontWeight: 'bold', color } }, value)
   ])
 );
@@ -506,11 +554,11 @@ const MetricBox = ({ title, value, color, icon, subtitle, isDecimal = false }) =
 
   return React.createElement('div', {
     style: {
-      backgroundColor: 'white',
+      backgroundColor: LIGHT_THEME.cardBackground,
       padding: '20px',
       borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      border: '1px solid #e2e8f0',
+      boxShadow: LIGHT_THEME.cardShadow,
+      border: `1px solid ${LIGHT_THEME.border}`,
       borderLeft: `4px solid ${color}`,
       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       cursor: 'pointer'
@@ -518,20 +566,20 @@ const MetricBox = ({ title, value, color, icon, subtitle, isDecimal = false }) =
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-2px)';
-      target.style.boxShadow = '0 8px 15px rgba(0,0,0,0.15)';
+      target.style.boxShadow = LIGHT_THEME.cardShadowStrong;
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+      target.style.boxShadow = LIGHT_THEME.cardShadow;
     }
   }, [
     React.createElement('div', { key: 'header', style: { display: 'flex', alignItems: 'center', marginBottom: '12px' } }, [
       React.createElement('span', { key: 'icon', style: { fontSize: '20px', marginRight: '8px' } }, icon),
-      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: '#666', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' } }, title)
+      React.createElement('h3', { key: 'title', style: { margin: 0, fontSize: '12px', color: LIGHT_THEME.textMuted, textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' } }, title)
     ]),
     React.createElement('div', { key: 'value', style: { fontSize: '24px', fontWeight: 'bold', color, lineHeight: '1', marginBottom: '4px' } }, displayValue),
-    React.createElement('div', { key: 'subtitle', style: { fontSize: '11px', color: '#888', fontWeight: '400' } }, subtitle)
+    React.createElement('div', { key: 'subtitle', style: { fontSize: '11px', color: LIGHT_THEME.textSecondary, fontWeight: '400' } }, subtitle)
   ]);
 };
 
@@ -542,10 +590,10 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     gap: '8px',
     padding: '20px',
     borderRadius: '12px',
-    border: '1px solid #e2e8f0',
-    backgroundColor: active ? '#eef2ff' : 'white',
-    boxShadow: active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)',
-    color: '#1f2937',
+    border: `1px solid ${LIGHT_THEME.border}`,
+    backgroundColor: active ? LIGHT_THEME.cardBackgroundActive : LIGHT_THEME.cardBackground,
+    boxShadow: active ? LIGHT_THEME.cardShadowStrong : LIGHT_THEME.cardShadow,
+    color: LIGHT_THEME.navText,
     textDecoration: 'none',
     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     cursor: 'pointer'
@@ -557,17 +605,17 @@ const NavCard = ({ href, label, description, icon, active = false }) => {
     onMouseEnter: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(-3px)';
-      target.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.25)';
+      target.style.boxShadow = LIGHT_THEME.cardShadowStrong;
     },
     onMouseLeave: (e) => {
       const target = e.currentTarget;
       target.style.transform = 'translateY(0)';
-      target.style.boxShadow = active ? '0 8px 20px rgba(102, 126, 234, 0.25)' : '0 4px 6px rgba(0,0,0,0.08)';
+      target.style.boxShadow = active ? LIGHT_THEME.cardShadowStrong : LIGHT_THEME.cardShadow;
     }
   }, [
     React.createElement('div', { key: 'icon', style: { fontSize: '24px' } }, icon),
     React.createElement('div', { key: 'label', style: { fontWeight: '600', fontSize: '16px' } }, label),
-    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: '#4b5563' } }, description)
+    React.createElement('div', { key: 'description', style: { fontSize: '13px', color: LIGHT_THEME.textSecondary } }, description)
   ]);
 };
 
