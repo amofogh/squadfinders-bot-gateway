@@ -434,7 +434,7 @@ export const adminJS = new AdminJS({
           icon: 'Heart'
         },
         sort: {
-          sortBy: 'at',
+          sortBy: 'message_date',
           direction: 'desc'
         },
         listProperties: [
@@ -444,7 +444,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at'
+          'message_date'
         ],
         filterProperties: [
           'user_id',
@@ -453,7 +453,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at'
+          'message_date'
         ],
         showProperties: [
           'user_id',
@@ -462,7 +462,7 @@ export const adminJS = new AdminJS({
           'message_id',
           'emoji',
           'type',
-          'at',
+          'message_date',
           'meta',
           'createdAt',
           'updatedAt'
