@@ -9,6 +9,20 @@ const parseNumber = (value, defaultValue) => {
   return Number.isNaN(parsed) ? defaultValue : parsed;
 };
 
+const parseDurationMinutes = ({ minutesEnv, hoursEnv, defaultMinutes }) => {
+  const minutesValue = parseNumber(process.env[minutesEnv], undefined);
+  if (minutesValue !== undefined) {
+    return minutesValue;
+  }
+
+  const hoursValue = parseNumber(process.env[hoursEnv], undefined);
+  if (hoursValue !== undefined) {
+    return hoursValue * 60;
+  }
+
+  return defaultMinutes;
+};
+
 export const config = {
   mongodb: {
     uri: process.env.MONGO_URI || 'mongodb://admin:password@host:27017/players?authSource=admin',
@@ -41,13 +55,29 @@ export const config = {
   },
   userSeenCleanup: {
     enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false', // Default true
-    disableAfterHours: parseNumber(process.env.USER_SEEN_DISABLE_AFTER_HOURS, 2), // Default 2 hours
-    intervalHours: parseNumber(process.env.USER_SEEN_CLEANUP_INTERVAL_HOURS, 12), // Default 12 hours
+    disableAfterMinutes: parseDurationMinutes({
+      minutesEnv: 'USER_SEEN_DISABLE_AFTER_MINUTES',
+      hoursEnv: 'USER_SEEN_DISABLE_AFTER_HOURS',
+      defaultMinutes: 2 * 60
+    }),
+    intervalMinutes: parseDurationMinutes({
+      minutesEnv: 'USER_SEEN_CLEANUP_INTERVAL_MINUTES',
+      hoursEnv: 'USER_SEEN_CLEANUP_INTERVAL_HOURS',
+      defaultMinutes: 12 * 60
+    })
   },
   playerCleanup: {
     enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false', // Default true
-    disableAfterHours: parseNumber(process.env.PLAYER_DISABLE_AFTER_HOURS, 6), // Default 6 hours
-    intervalHours: parseNumber(process.env.PLAYER_CLEANUP_INTERVAL_HOURS, 12), // Default 12 hours
+    disableAfterMinutes: parseDurationMinutes({
+      minutesEnv: 'PLAYER_DISABLE_AFTER_MINUTES',
+      hoursEnv: 'PLAYER_DISABLE_AFTER_HOURS',
+      defaultMinutes: 6 * 60
+    }),
+    intervalMinutes: parseDurationMinutes({
+      minutesEnv: 'PLAYER_CLEANUP_INTERVAL_MINUTES',
+      hoursEnv: 'PLAYER_CLEANUP_INTERVAL_HOURS',
+      defaultMinutes: 12 * 60
+    })
   },
   messageSpam: {
     windowMinutes: parseNumber(process.env.MESSAGE_SPAM_WINDOW_MINUTES, 60), // Default 60 minutes

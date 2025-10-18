@@ -36,15 +36,15 @@ export class CleanupService {
       return;
     }
 
-    const intervalHours = config.userSeenCleanup.intervalHours;
+    const intervalMinutes = config.userSeenCleanup.intervalMinutes;
     logCleanup('Starting UserSeen cleanup service', {
-      intervalHours: intervalHours,
-      disableAfterHours: config.userSeenCleanup.disableAfterHours
+      intervalMinutes,
+      disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes
     });
-    
+
     this.userSeenIntervalId = setInterval(async () => {
       await this.cleanupUserSeen();
-    }, intervalHours * 60 * 60 * 1000);
+    }, intervalMinutes * 60 * 1000);
     
     this.isUserSeenRunning = true;
     
@@ -76,15 +76,15 @@ export class CleanupService {
       return;
     }
 
-    const intervalHours = config.playerCleanup.intervalHours;
+    const intervalMinutes = config.playerCleanup.intervalMinutes;
     logCleanup('Starting Player cleanup service', {
-      intervalHours: intervalHours,
-      disableAfterHours: config.playerCleanup.disableAfterHours
+      intervalMinutes,
+      disableAfterMinutes: config.playerCleanup.disableAfterMinutes
     });
-    
+
     this.playerIntervalId = setInterval(async () => {
       await this.cleanupPlayers();
-    }, intervalHours * 60 * 60 * 1000);
+    }, intervalMinutes * 60 * 1000);
     
     this.isPlayerRunning = true;
     
@@ -102,16 +102,16 @@ export class CleanupService {
     }
   }
 
-  // Disable UserSeen records older than configured hours
+  // Disable UserSeen records older than configured minutes
   async cleanupUserSeen() {
     if (!config.userSeenCleanup.enabled) return;
 
     try {
-      const cutoffTime = new Date(Date.now() - config.userSeenCleanup.disableAfterHours * 60 * 60 * 1000);
-      
+      const cutoffTime = new Date(Date.now() - config.userSeenCleanup.disableAfterMinutes * 60 * 1000);
+
       logCleanup('Starting UserSeen cleanup', {
         cutoffTime: cutoffTime.toISOString(),
-        disableAfterHours: config.userSeenCleanup.disableAfterHours
+        disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes
       });
 
       const result = await UserSeen.updateMany(
@@ -127,7 +127,7 @@ export class CleanupService {
       if (result.modifiedCount > 0) {
         logCleanup('UserSeen cleanup completed', {
           disabledCount: result.modifiedCount,
-          disableAfterHours: config.userSeenCleanup.disableAfterHours,
+          disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes,
           cutoffTime: cutoffTime.toISOString()
         });
       } else {
@@ -144,16 +144,16 @@ export class CleanupService {
     }
   }
 
-  // Disable Players with message_date older than configured hours
+  // Disable Players with message_date older than configured minutes
   async cleanupPlayers() {
     if (!config.playerCleanup.enabled) return;
 
     try {
-      const cutoffTime = new Date(Date.now() - config.playerCleanup.disableAfterHours * 60 * 60 * 1000);
-      
+      const cutoffTime = new Date(Date.now() - config.playerCleanup.disableAfterMinutes * 60 * 1000);
+
       logCleanup('Starting Player cleanup', {
         cutoffTime: cutoffTime.toISOString(),
-        disableAfterHours: config.playerCleanup.disableAfterHours
+        disableAfterMinutes: config.playerCleanup.disableAfterMinutes
       });
 
       const result = await Player.updateMany(
@@ -169,7 +169,7 @@ export class CleanupService {
       if (result.modifiedCount > 0) {
         logCleanup('Player cleanup completed', {
           disabledCount: result.modifiedCount,
-          disableAfterHours: config.playerCleanup.disableAfterHours,
+          disableAfterMinutes: config.playerCleanup.disableAfterMinutes,
           cutoffTime: cutoffTime.toISOString()
         });
       } else {
@@ -192,15 +192,15 @@ export class CleanupService {
       userSeen: {
         isRunning: this.isUserSeenRunning,
         enabled: config.userSeenCleanup.enabled,
-        disableAfterHours: config.userSeenCleanup.disableAfterHours,
-        intervalHours: config.userSeenCleanup.intervalHours,
+        disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes,
+        intervalMinutes: config.userSeenCleanup.intervalMinutes,
         intervalId: this.userSeenIntervalId
       },
       player: {
         isRunning: this.isPlayerRunning,
         enabled: config.playerCleanup.enabled,
-        disableAfterHours: config.playerCleanup.disableAfterHours,
-        intervalHours: config.playerCleanup.intervalHours,
+        disableAfterMinutes: config.playerCleanup.disableAfterMinutes,
+        intervalMinutes: config.playerCleanup.intervalMinutes,
         intervalId: this.playerIntervalId
       }
     };
