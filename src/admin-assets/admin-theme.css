@@ -87,6 +87,21 @@ body.sf-dark-theme .adminjs_App .adminjs_TableRow:hover {
   background-color: rgba(99, 102, 241, 0.12);
 }
 
+.adminjs_Navigation {
+  background-color: var(--sf-admin-sidebar-bg);
+  border-right: 1px solid var(--sf-admin-border);
+}
+
+.adminjs_Navigation a,
+.adminjs_Navigation span {
+  color: var(--sf-admin-text);
+}
+
+.adminjs_Navigation a:hover {
+  background-color: rgba(99, 102, 241, 0.08);
+  color: var(--sf-admin-text);
+}
+
 body[data-admin-theme='dark'] .adminjs_Navigation,
 body.sf-dark-theme .adminjs_Navigation {
   background-color: var(--sf-admin-sidebar-bg);
