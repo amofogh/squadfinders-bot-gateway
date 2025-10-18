@@ -175,25 +175,25 @@ router.get('/pending', authMiddleware, authorizeRole(['superadmin', 'admin']), m
 
 /**
  * @swagger
- * /api/messages/{id}:
+ * /api/messages/{message_id}:
  *   get:
- *     summary: Get message by ID
+ *     summary: Get message by message_id
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Message details
  *       404:
  *         description: Message not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), messageController.getById);
+router.get('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), messageController.getByMessageId);
 
 /**
  * @swagger
@@ -217,18 +217,18 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), message
 
 /**
  * @swagger
- * /api/messages/{id}:
+ * /api/messages/{message_id}:
  *   put:
- *     summary: Update message (Admin only)
+ *     summary: Update message by message_id (Admin only)
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -239,22 +239,22 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), message
  *       200:
  *         description: Message updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.update);
+router.put('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.updateByMessageId);
 
 /**
  * @swagger
- * /api/messages/{id}:
+ * /api/messages/{message_id}:
  *   patch:
- *     summary: Partially update message (Admin only)
+ *     summary: Partially update message by message_id (Admin only)
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -265,26 +265,26 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), messa
  *       200:
  *         description: Message updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.update);
+router.patch('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.updateByMessageId);
 
 /**
  * @swagger
- * /api/messages/{id}:
+ * /api/messages/{message_id}:
  *   delete:
- *     summary: Delete message (Admin only)
+ *     summary: Delete message by message_id (Admin only)
  *     tags: [Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Message deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.delete);
+router.delete('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), messageController.deleteByMessageId);
 
 export default router;

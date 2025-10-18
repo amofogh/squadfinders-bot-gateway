@@ -1,7 +1,7 @@
 import { Player, CanceledUser } from '../models/index.js';
 import { UserSeen, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import { createServiceLogger } from '../utils/logger.js';
 import createCsvWriter from 'csv-writer';
 import { promises as fs } from 'fs';
@@ -87,16 +87,15 @@ export const playerController = {
       user_id: user_id
     });
   }),
-  // Get player by ID or message_id
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
+  // Get player by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      player = await Player.findById(id);
-    } else if (validateMessageId(id)) {
-      player = await Player.findOne({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const player = await Player.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
@@ -191,55 +190,50 @@ export const playerController = {
     res.status(201).json(player);
   }),
 
-  // Update player
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
+  // Update player by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      player = await Player.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true
-      });
-    } else if (validateMessageId(id)) {
-      player = await Player.findOneAndUpdate(
-        { message_id: parseInt(id, 10) },
-        req.body,
-        { new: true, runValidators: true }
-      );
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
+    const player = await Player.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
     if (!player) {
-      playerLogger.warn('Player not found for update', { id });
+      playerLogger.warn('Player not found for update', { message_id });
       return res.status(404).json({ error: 'Player not found' });
     }
 
     playerLogger.info('Player updated successfully', {
-      id,
+      message_id,
       playerId: player._id.toString()
     });
 
     res.json(player);
   }),
 
-  // Delete player
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
+  // Delete player by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      player = await Player.findByIdAndDelete(id);
-    } else if (validateMessageId(id)) {
-      player = await Player.findOneAndDelete({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
+    const player = await Player.findOneAndDelete({ message_id: parseInt(message_id, 10) });
+
     if (!player) {
-      playerLogger.warn('Player not found for deletion', { id });
+      playerLogger.warn('Player not found for deletion', { message_id });
       return res.status(404).json({ error: 'Player not found' });
     }
 
     playerLogger.info('Player deleted successfully', {
-      id,
+      message_id,
       playerId: player._id.toString()
     });
 
