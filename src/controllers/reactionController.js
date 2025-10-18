@@ -1,7 +1,7 @@
 import { Reaction } from '../models/Reaction.js';
 import { UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import { recordReaction } from '../services/analyticsService.js';
 import { createServiceLogger } from '../utils/logger.js';
 
@@ -39,15 +39,15 @@ export const reactionController = {
     });
   }),
 
-  // Get reaction by ID
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Get reaction by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid reaction ID' });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    const reaction = await Reaction.findById(id);
+    const reaction = await Reaction.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!reaction) {
       return res.status(404).json({ error: 'Reaction not found' });
@@ -92,12 +92,12 @@ export const reactionController = {
     res.status(201).json(reaction);
   }),
 
-  // Update reaction
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Update reaction by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid reaction ID' });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
     const updatePayload = { ...req.body };
@@ -108,10 +108,11 @@ export const reactionController = {
 
     delete updatePayload.at;
 
-    const reaction = await Reaction.findByIdAndUpdate(id, updatePayload, {
-      new: true,
-      runValidators: true
-    });
+    const reaction = await Reaction.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      updatePayload,
+      { new: true, runValidators: true }
+    );
 
     if (!reaction) {
       return res.status(404).json({ error: 'Reaction not found' });
@@ -120,29 +121,27 @@ export const reactionController = {
     res.json(reaction);
   }),
 
-  // Delete reactions by message id
+  // Delete reaction by message_id
   deleteByMessageId: handleAsyncError(async (req, res) => {
-    const { messageId } = req.params;
-    const numericMessageId = Number(messageId);
+    const { message_id } = req.params;
 
-    if (!Number.isFinite(numericMessageId)) {
+    if (!validateMessageId(message_id)) {
       return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    const deletionResult = await Reaction.deleteMany({ message_id: numericMessageId });
+    const reaction = await Reaction.findOneAndDelete({ message_id: parseInt(message_id, 10) });
 
-    if (!deletionResult.deletedCount) {
-      return res.status(404).json({ error: 'No reactions found for the provided message ID' });
+    if (!reaction) {
+      return res.status(404).json({ error: 'Reaction not found' });
     }
 
-    reactionLogger.info('Deleted reactions for message', {
-      messageId: numericMessageId,
-      deletedCount: deletionResult.deletedCount
+    reactionLogger.info('Deleted reaction for message', {
+      messageId: parseInt(message_id, 10)
     });
 
     res.json({
-      message: 'Reactions deleted successfully',
-      deletedCount: deletionResult.deletedCount
+      message: 'Reaction deleted successfully',
+      deletedCount: 1
     });
   })
 };

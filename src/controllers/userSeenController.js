@@ -1,7 +1,6 @@
 import { UserSeen } from '../models/index.js';
 import { UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId } from '../utils/validators.js';
 import { recordSeen } from '../services/analyticsService.js';
 
 export const userSeenController = {
@@ -35,15 +34,15 @@ export const userSeenController = {
     });
   }),
 
-  // Get user seen record by ID
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Get user seen record by user_id
+  getByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid record ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const record = await UserSeen.findById(id);
+    const record = await UserSeen.findOne({ user_id });
 
     if (!record) {
       return res.status(404).json({ error: 'User seen record not found' });
@@ -97,15 +96,15 @@ export const userSeenController = {
     }
   }),
 
-  // Update user seen record
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Update user seen record by user_id
+  updateByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid record ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const record = await UserSeen.findByIdAndUpdate(id, req.body, {
+    const record = await UserSeen.findOneAndUpdate({ user_id }, req.body, {
       new: true,
       runValidators: true
     });
@@ -117,15 +116,15 @@ export const userSeenController = {
     res.json(record);
   }),
 
-  // Delete user seen record
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Delete user seen record by user_id
+  deleteByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid record ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const record = await UserSeen.findByIdAndDelete(id);
+    const record = await UserSeen.findOneAndDelete({ user_id });
 
     if (!record) {
       return res.status(404).json({ error: 'User seen record not found' });

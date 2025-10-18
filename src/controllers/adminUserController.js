@@ -1,6 +1,5 @@
 import { AdminUser } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId } from '../utils/validators.js';
 
 export const adminUserController = {
   // Get all admin users with pagination
@@ -32,15 +31,15 @@ export const adminUserController = {
     });
   }),
 
-  // Get admin user by ID
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Get admin user by email
+  getByEmail: handleAsyncError(async (req, res) => {
+    const { email } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = await AdminUser.findById(id).select('-password');
+    const user = await AdminUser.findOne({ email }).select('-password');
 
     if (!user) {
       return res.status(404).json({ error: 'Admin user not found' });
@@ -61,15 +60,15 @@ export const adminUserController = {
     res.status(201).json(userResponse);
   }),
 
-  // Update admin user
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Update admin user by email
+  updateByEmail: handleAsyncError(async (req, res) => {
+    const { email } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = await AdminUser.findByIdAndUpdate(id, req.body, {
+    const user = await AdminUser.findOneAndUpdate({ email }, req.body, {
       new: true,
       runValidators: true
     }).select('-password');
@@ -81,15 +80,15 @@ export const adminUserController = {
     res.json(user);
   }),
 
-  // Delete admin user
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Delete admin user by email
+  deleteByEmail: handleAsyncError(async (req, res) => {
+    const { email } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = await AdminUser.findByIdAndDelete(id);
+    const user = await AdminUser.findOneAndDelete({ email });
 
     if (!user) {
       return res.status(404).json({ error: 'Admin user not found' });

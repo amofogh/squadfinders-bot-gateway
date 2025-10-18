@@ -69,15 +69,15 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
 
 /**
  * @swagger
- * /api/user-seen/{id}:
+ * /api/user-seen/{user_id}:
  *   get:
- *     summary: Get user seen record by ID
+ *     summary: Get user seen record by user_id
  *     tags: [User Seen]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -87,7 +87,7 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
  *       404:
  *         description: User seen record not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), userSeenController.getById);
+router.get('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), userSeenController.getByUserId);
 
 /**
  * @swagger
@@ -111,15 +111,15 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), userSee
 
 /**
  * @swagger
- * /api/user-seen/{id}:
+ * /api/user-seen/{user_id}:
  *   put:
- *     summary: Update user seen record (SuperAdmin/Admin only)
+ *     summary: Update user seen record by user_id (SuperAdmin/Admin only)
  *     tags: [User Seen]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -133,19 +133,19 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), userSee
  *       200:
  *         description: User seen record updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.update);
+router.put('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.updateByUserId);
 
 /**
  * @swagger
- * /api/user-seen/{id}:
+ * /api/user-seen/{user_id}:
  *   patch:
- *     summary: Partially update user seen record (SuperAdmin/Admin only)
+ *     summary: Partially update user seen record by user_id (SuperAdmin/Admin only)
  *     tags: [User Seen]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -159,19 +159,19 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userS
  *       200:
  *         description: User seen record updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.update);
+router.patch('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.updateByUserId);
 
 /**
  * @swagger
- * /api/user-seen/{id}:
+ * /api/user-seen/{user_id}:
  *   delete:
- *     summary: Delete user seen record (SuperAdmin/Admin only)
+ *     summary: Delete user seen record by user_id (SuperAdmin/Admin only)
  *     tags: [User Seen]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -179,6 +179,6 @@ router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), use
  *       200:
  *         description: User seen record deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.delete);
+router.delete('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userSeenController.deleteByUserId);
 
 export default router;

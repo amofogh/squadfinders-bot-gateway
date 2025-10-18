@@ -137,25 +137,25 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
 router.get('/squad', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), playerController.getPlayersForSquad);
 /**
  * @swagger
- * /api/players/{id}:
+ * /api/players/{message_id}:
  *   get:
- *     summary: Get player by ID
+ *     summary: Get player by message_id
  *     tags: [Players]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Player details
  *       404:
  *         description: Player not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), playerController.getById);
+router.get('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), playerController.getByMessageId);
 
 /**
  * @swagger
@@ -179,18 +179,18 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), playerC
 
 /**
  * @swagger
- * /api/players/{id}:
+ * /api/players/{message_id}:
  *   put:
- *     summary: Update player (Admin only)
+ *     summary: Update player by message_id (Admin only)
  *     tags: [Players]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -201,22 +201,22 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), playerC
  *       200:
  *         description: Player updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.update);
+router.put('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.updateByMessageId);
 
 /**
  * @swagger
- * /api/players/{id}:
+ * /api/players/{message_id}:
  *   patch:
- *     summary: Partially update player (Admin only)
+ *     summary: Partially update player by message_id (Admin only)
  *     tags: [Players]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -227,26 +227,26 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), playe
  *       200:
  *         description: Player updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.update);
+router.patch('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.updateByMessageId);
 
 /**
  * @swagger
- * /api/players/{id}:
+ * /api/players/{message_id}:
  *   delete:
- *     summary: Delete player (Admin only)
+ *     summary: Delete player by message_id (Admin only)
  *     tags: [Players]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Player deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.delete);
+router.delete('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.deleteByMessageId);
 
 export default router;

@@ -86,25 +86,25 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
 
 /**
  * @swagger
- * /api/reactions/{id}:
+ * /api/reactions/{message_id}:
  *   get:
- *     summary: Get reaction by ID
+ *     summary: Get reaction by message_id
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Reaction details
  *       404:
  *         description: Reaction not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getById);
+router.get('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getByMessageId);
 
 /**
  * @swagger
@@ -128,18 +128,18 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), reactio
 
 /**
  * @swagger
- * /api/reactions/{id}:
+ * /api/reactions/{message_id}:
  *   put:
- *     summary: Update reaction (Admin only)
+ *     summary: Update reaction by message_id (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -150,22 +150,22 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), reactio
  *       200:
  *         description: Reaction updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.update);
+router.put('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.updateByMessageId);
 
 /**
  * @swagger
- * /api/reactions/{id}:
+ * /api/reactions/{message_id}:
  *   patch:
- *     summary: Partially update reaction (Admin only)
+ *     summary: Partially update reaction by message_id (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -176,26 +176,26 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), react
  *       200:
  *         description: Reaction updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.update);
+router.patch('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.updateByMessageId);
 
 /**
  * @swagger
- * /api/reactions/message/{messageId}:
+ * /api/reactions/{message_id}:
  *   delete:
- *     summary: Delete reactions by message ID (Admin only)
+ *     summary: Delete reaction by message_id (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: messageId
+ *         name: message_id
  *         required: true
  *         schema:
  *           type: number
  *     responses:
  *       200:
- *         description: Reactions deleted successfully
+ *         description: Reaction deleted successfully
  */
-router.delete('/message/:messageId', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.deleteByMessageId);
+router.delete('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.deleteByMessageId);
 
 export default router;

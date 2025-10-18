@@ -1,6 +1,5 @@
 import { UserMessage } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId } from '../utils/validators.js';
 
 export const userMessageController = {
   // Get all user messages with pagination
@@ -32,15 +31,15 @@ export const userMessageController = {
     });
   }),
 
-  // Get user message by ID
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Get user message by user_id
+  getByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const message = await UserMessage.findById(id);
+    const message = await UserMessage.findOne({ user_id });
 
     if (!message) {
       return res.status(404).json({ error: 'User message not found' });
@@ -56,15 +55,15 @@ export const userMessageController = {
     res.status(201).json(message);
   }),
 
-  // Update user message
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Update user message by user_id
+  updateByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const message = await UserMessage.findByIdAndUpdate(id, req.body, {
+    const message = await UserMessage.findOneAndUpdate({ user_id }, req.body, {
       new: true,
       runValidators: true
     });
@@ -76,15 +75,15 @@ export const userMessageController = {
     res.json(message);
   }),
 
-  // Delete user message
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Delete user message by user_id
+  deleteByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid message ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const message = await UserMessage.findByIdAndDelete(id);
+    const message = await UserMessage.findOneAndDelete({ user_id });
 
     if (!message) {
       return res.status(404).json({ error: 'User message not found' });

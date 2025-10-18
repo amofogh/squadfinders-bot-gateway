@@ -65,15 +65,15 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
 
 /**
  * @swagger
- * /api/user-messages/{id}:
+ * /api/user-messages/{user_id}:
  *   get:
- *     summary: Get user message by ID
+ *     summary: Get user message by user_id
  *     tags: [User Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -83,7 +83,7 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
  *       404:
  *         description: User message not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), userMessageController.getById);
+router.get('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), userMessageController.getByUserId);
 
 /**
  * @swagger
@@ -107,15 +107,15 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), userMes
 
 /**
  * @swagger
- * /api/user-messages/{id}:
+ * /api/user-messages/{user_id}:
  *   put:
- *     summary: Update user message (Admin only)
+ *     summary: Update user message by user_id (Admin only)
  *     tags: [User Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -129,19 +129,19 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), userMes
  *       200:
  *         description: User message updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.update);
+router.put('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.updateByUserId);
 
 /**
  * @swagger
- * /api/user-messages/{id}:
+ * /api/user-messages/{user_id}:
  *   patch:
- *     summary: Partially update user message (Admin only)
+ *     summary: Partially update user message by user_id (Admin only)
  *     tags: [User Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -155,19 +155,19 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userM
  *       200:
  *         description: User message updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.update);
+router.patch('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.updateByUserId);
 
 /**
  * @swagger
- * /api/user-messages/{id}:
+ * /api/user-messages/{user_id}:
  *   delete:
- *     summary: Delete user message (Admin only)
+ *     summary: Delete user message by user_id (Admin only)
  *     tags: [User Messages]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -175,6 +175,6 @@ router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), use
  *       200:
  *         description: User message deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.delete);
+router.delete('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), userMessageController.deleteByUserId);
 
 export default router;
