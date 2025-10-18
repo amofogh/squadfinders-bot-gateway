@@ -1,6 +1,5 @@
 import { CanceledUser, Message, Player } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId } from '../utils/validators.js';
 import { createServiceLogger } from '../utils/logger.js';
 import { recordCancel } from '../services/analyticsService.js';
 
@@ -41,15 +40,15 @@ export const canceledUserController = {
     });
   }),
 
-  // Get canceled user by ID
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Get canceled user by user_id
+  getByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const user = await CanceledUser.findById(id);
+    const user = await CanceledUser.findOne({ user_id });
 
     if (!user) {
       return res.status(404).json({ error: 'Canceled user not found' });
@@ -155,15 +154,15 @@ export const canceledUserController = {
     });
   }),
 
-  // Update canceled user
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
+  // Update canceled user by user_id
+  updateByUserId: handleAsyncError(async (req, res) => {
+    const { user_id } = req.params;
 
-    if (!validateObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const user = await CanceledUser.findByIdAndUpdate(id, req.body, {
+    const user = await CanceledUser.findOneAndUpdate({ user_id }, req.body, {
       new: true,
       runValidators: true
     });
@@ -173,8 +172,7 @@ export const canceledUserController = {
     }
 
     canceledUserLogger.info('Updated canceled user', {
-      id,
-      userId: user.user_id
+      userId: user_id
     });
 
     res.json(user);

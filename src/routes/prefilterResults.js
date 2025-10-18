@@ -80,25 +80,25 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
 
 /**
  * @swagger
- * /api/prefilter-results/{id}:
+ * /api/prefilter-results/{message_id}:
  *   get:
- *     summary: Get prefilter result by ID
+ *     summary: Get prefilter result by message_id
  *     tags: [Prefilter Results]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Prefilter result details
  *       404:
  *         description: Prefilter result not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), prefilterResultController.getById);
+router.get('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), prefilterResultController.getByMessageId);
 
 /**
  * @swagger
@@ -122,18 +122,18 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilt
 
 /**
  * @swagger
- * /api/prefilter-results/{id}:
+ * /api/prefilter-results/{message_id}:
  *   put:
- *     summary: Update prefilter result (Admin only)
+ *     summary: Update prefilter result by message_id (Admin only)
  *     tags: [Prefilter Results]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -144,22 +144,22 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilt
  *       200:
  *         description: Prefilter result updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.update);
+router.put('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.updateByMessageId);
 
 /**
  * @swagger
- * /api/prefilter-results/{id}:
+ * /api/prefilter-results/{message_id}:
  *   patch:
- *     summary: Partially update prefilter result (Admin only)
+ *     summary: Partially update prefilter result by message_id (Admin only)
  *     tags: [Prefilter Results]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     requestBody:
  *       required: true
  *       content:
@@ -170,26 +170,26 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefi
  *       200:
  *         description: Prefilter result updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.update);
+router.patch('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.updateByMessageId);
 
 /**
  * @swagger
- * /api/prefilter-results/{id}:
+ * /api/prefilter-results/{message_id}:
  *   delete:
- *     summary: Delete prefilter result (Admin only)
+ *     summary: Delete prefilter result by message_id (Admin only)
  *     tags: [Prefilter Results]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
  *     responses:
  *       200:
  *         description: Prefilter result deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.delete);
+router.delete('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), prefilterResultController.deleteByMessageId);
 
 export default router;

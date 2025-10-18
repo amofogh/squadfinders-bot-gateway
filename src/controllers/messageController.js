@@ -1,7 +1,7 @@
 import { Message } from '../models/Message.js';
 import { CanceledUser, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';
 import { logMessageProcessing, logError, createServiceLogger } from '../utils/logger.js';
 import { recordUserMessage } from '../services/analyticsService.js';
@@ -166,16 +166,15 @@ export const messageController = {
     });
   }),
 
-  // Get message by ID or message_id
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
+  // Get message by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      message = await Message.findById(id);
-    } else if (validateMessageId(id)) {
-      message = await Message.findOne({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const message = await Message.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
@@ -278,23 +277,19 @@ export const messageController = {
     res.status(201).json(newMessage);
   }),
 
-  // Update message
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
+  // Update message by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      message = await Message.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true
-      });
-    } else if (validateMessageId(id)) {
-      message = await Message.findOneAndUpdate(
-        { message_id: parseInt(id, 10) },
-        req.body,
-        { new: true, runValidators: true }
-      );
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const message = await Message.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      req.body,
+      { new: true, runValidators: true }
+    );
 
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
@@ -303,27 +298,18 @@ export const messageController = {
     res.json(message);
   }),
 
-  // Delete message
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
+  // Delete message by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      message = await Message.findById(id);
-    } else if (validateMessageId(id)) {
-      message = await Message.findOne({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const message = await Message.findOneAndDelete({ message_id: parseInt(message_id, 10) });
 
     if (!message) {
         return res.status(404).json({ error: 'Message not found' });
-    }
-
-
-    // Delete the original message
-    if (validateObjectId(id)) {
-      await Message.findByIdAndDelete(id);
-    } else if (validateMessageId(id)) {
-      await Message.findOneAndDelete({ message_id: parseInt(id, 10) });
     }
 
     res.json({

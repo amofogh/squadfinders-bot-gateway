@@ -84,15 +84,15 @@ router.get('/is-canceled', authMiddleware, authorizeRole(['superadmin', 'admin',
 
 /**
  * @swagger
- * /api/canceled-users/{id}:
+ * /api/canceled-users/{user_id}:
  *   get:
- *     summary: Get canceled user by ID
+ *     summary: Get canceled user by user_id
  *     tags: [Canceled Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -102,7 +102,7 @@ router.get('/is-canceled', authMiddleware, authorizeRole(['superadmin', 'admin',
  *       404:
  *         description: Canceled user not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), canceledUserController.getById);
+router.get('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), canceledUserController.getByUserId);
 
 /**
  * @swagger
@@ -126,15 +126,15 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), cancele
 
 /**
  * @swagger
- * /api/canceled-users/{id}:
+ * /api/canceled-users/{user_id}:
  *   put:
- *     summary: Update canceled user (Admin only)
+ *     summary: Update canceled user by user_id (Admin only)
  *     tags: [Canceled Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -148,19 +148,19 @@ router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), cancele
  *       200:
  *         description: Canceled user updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.update);
+router.put('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.updateByUserId);
 
 /**
  * @swagger
- * /api/canceled-users/{id}:
+ * /api/canceled-users/{user_id}:
  *   patch:
- *     summary: Partially update canceled user (Admin only)
+ *     summary: Partially update canceled user by user_id (Admin only)
  *     tags: [Canceled Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: string
@@ -174,7 +174,7 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), cance
  *       200:
  *         description: Canceled user updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.update);
+router.patch('/:user_id', authMiddleware, authorizeRole(['superadmin', 'admin']), canceledUserController.updateByUserId);
 
 /**
  * @swagger
