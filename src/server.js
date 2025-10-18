@@ -16,7 +16,6 @@ import { AdminUser } from './models/index.js';
 import { autoExpiryService } from './services/autoExpiry.js';
 import { cleanupService } from './services/cleanupService.js';
 import logger, { logApiRequest } from './utils/logger.js';
-import { componentLoader } from './config/componentLoader.js';
 
 // Initialize Express app
 const app = express();
