@@ -135,6 +135,34 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
  *         description: Missing user_id parameter
  */
 router.get('/squad', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), playerController.getPlayersForSquad);
+
+/**
+ * @swagger
+ * /api/players/deactivate-sender:
+ *   post:
+ *     summary: Deactivate all active players for a sender (Admin only)
+ *     tags: [Players]
+ *     security:
+ *       - basicAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sender_id
+ *             properties:
+ *               sender_id:
+ *                 type: string
+ *                 description: Sender identifier whose active players should be deactivated
+ *     responses:
+ *       200:
+ *         description: Deactivated players count for the sender
+ *       400:
+ *         description: sender_id is missing from the request body
+ */
+router.post('/deactivate-sender', authMiddleware, authorizeRole(['superadmin', 'admin']), playerController.deactivateBySenderId);
 /**
  * @swagger
  * /api/players/{message_id}:

@@ -87,6 +87,39 @@ export const playerController = {
       user_id: user_id
     });
   }),
+
+  // Deactivate all active players by sender_id
+  deactivateBySenderId: handleAsyncError(async (req, res) => {
+    const { sender_id } = req.body;
+
+    if (!sender_id) {
+      return res.status(400).json({ error: 'sender_id is required' });
+    }
+
+    playerLogger.info('Deactivating players for sender', { senderId: sender_id });
+
+    const updateResult = await Player.updateMany(
+      {
+        'sender.id': sender_id,
+        active: true
+      },
+      {
+        $set: { active: false }
+      }
+    );
+
+    playerLogger.info('Deactivated players for sender', {
+      senderId: sender_id,
+      matchedCount: updateResult.matchedCount || 0,
+      modifiedCount: updateResult.modifiedCount || 0
+    });
+
+    res.json({
+      sender_id,
+      matched_count: updateResult.matchedCount || 0,
+      modified_count: updateResult.modifiedCount || 0
+    });
+  }),
   // Get player by message_id
   getByMessageId: handleAsyncError(async (req, res) => {
     const { message_id } = req.params;
