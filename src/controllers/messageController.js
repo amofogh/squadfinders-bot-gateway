@@ -186,7 +186,7 @@ export const messageController = {
   // Create new message
   create: handleAsyncError(async (req, res) => {
     const { sender, group, message } = req.body;
-    
+
     messageLogger.info('Creating new message', {
       senderId: sender?.id,
       senderUsername: sender?.username,

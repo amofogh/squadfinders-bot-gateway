@@ -182,7 +182,6 @@ export const playerController = {
       const updateResult = await Player.updateMany(
         {
           'sender.id': sender.id,
-          'group.group_id': group.group_id,
           active: true
         },
         {
