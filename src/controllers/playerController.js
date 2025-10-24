@@ -13,17 +13,33 @@ const playerLogger = createServiceLogger('player-controller');
 export const playerController = {
   // Get all players with filtering and pagination
   getAll: handleAsyncError(async (req, res) => {
-    const { active, platform, page = 1, limit = 100 } = req.query;
+    const { active, platform, page = 1, limit = 100, user_id, time } = req.query;
     const query = {};
 
     if (active !== undefined) query.active = active === 'true';
     if (platform) query.platform = platform;
+    if (user_id) query['sender.id'] = user_id;
+
+    let minutesFilter = null;
+    if (time !== undefined) {
+      const parsedMinutes = parseInt(time, 10);
+
+      if (Number.isNaN(parsedMinutes) || parsedMinutes < 0) {
+        return res.status(400).json({ error: 'time must be a non-negative integer representing minutes' });
+      }
+
+      minutesFilter = parsedMinutes;
+      const thresholdDate = new Date(Date.now() - parsedMinutes * 60 * 1000);
+      query.message_date = { ...(query.message_date || {}), $gte: thresholdDate };
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     playerLogger.info('Fetching players', {
       active,
       platform,
+      userId: user_id,
+      minutesFilter,
       page: parseInt(page),
       limit: parseInt(limit)
     });
@@ -87,6 +103,39 @@ export const playerController = {
       user_id: user_id
     });
   }),
+
+  // Deactivate all active players by sender_id
+  deactivateBySenderId: handleAsyncError(async (req, res) => {
+    const { sender_id } = req.body;
+
+    if (!sender_id) {
+      return res.status(400).json({ error: 'sender_id is required' });
+    }
+
+    playerLogger.info('Deactivating players for sender', { senderId: sender_id });
+
+    const updateResult = await Player.updateMany(
+      {
+        'sender.id': sender_id,
+        active: true
+      },
+      {
+        $set: { active: false }
+      }
+    );
+
+    playerLogger.info('Deactivated players for sender', {
+      senderId: sender_id,
+      matchedCount: updateResult.matchedCount || 0,
+      modifiedCount: updateResult.modifiedCount || 0
+    });
+
+    res.json({
+      sender_id,
+      matched_count: updateResult.matchedCount || 0,
+      modified_count: updateResult.modifiedCount || 0
+    });
+  }),
   // Get player by message_id
   getByMessageId: handleAsyncError(async (req, res) => {
     const { message_id } = req.params;
@@ -115,6 +164,35 @@ export const playerController = {
       groupUsername: group?.group_username
     });
 
+
+    if (sender?.id) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const recentPlayer = await Player.findOne({
+        'sender.id': sender.id,
+        createdAt: { $gte: fiveMinutesAgo }
+      });
+
+      if (recentPlayer) {
+        const nextAllowedAt = new Date(recentPlayer.createdAt.getTime() + 5 * 60 * 1000);
+        const retryAfterSeconds = Math.max(
+          0,
+          Math.ceil((nextAllowedAt.getTime() - Date.now()) / 1000)
+        );
+
+        playerLogger.warn('Blocked player creation due to recent activity', {
+          senderId: sender.id,
+          recentMessageId: recentPlayer.message_id,
+          recentCreatedAt: recentPlayer.createdAt
+        });
+
+        return res.status(429).json({
+          error: 'Player was recently created for this user. Please wait before adding again.',
+          user_id: sender.id,
+          recent_message_id: recentPlayer.message_id,
+          retry_after_seconds: retryAfterSeconds
+        });
+      }
+    }
 
     if (sender?.id || sender?.username) {
       const cancellationQuery = [];
