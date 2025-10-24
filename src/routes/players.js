@@ -73,6 +73,17 @@ const router = express.Router();
  *           type: string
  *           enum: [PC, Console, unknown]
  *       - in: query
+ *         name: user_id
+ *         schema:
+ *           type: string
+ *         description: Filter players by sender user identifier
+ *       - in: query
+ *         name: time
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *         description: Return players whose message_date is within the last N minutes
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer

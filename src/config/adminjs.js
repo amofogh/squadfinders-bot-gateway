@@ -128,6 +128,7 @@ export const adminJS = new AdminJS({
         filterProperties: [
           'platform',
           'active',
+          'sender.id',
           'sender.username',
           'group.group_username',
           'message_date',
@@ -194,6 +195,7 @@ export const adminJS = new AdminJS({
         filterProperties: [
           'message_id',
           'group.group_username',
+          'sender.id',
           'sender.username',
           'message_date',
           'is_valid',
