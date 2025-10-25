@@ -54,7 +54,7 @@ export const config = {
         intervalMinutes: parseNumber(process.env.EXPIRY_INTERVAL_MINUTES, 1), // Default 1 minute
     },
     processingRecovery: {
-        timeoutMinutes: 5, // how long a message can sit in "processing" before we requeue
+        timeoutMinutes: process.env.MESSAGE_REQUEUE_AFTER_MINUTES, // how long a message can sit in "processing" before we requeue
         enabled: true
     },
     userSeenCleanup: {
