@@ -35,7 +35,8 @@ const MessageSchema = new mongoose.Schema({
 
 // Compound index for group and message
 MessageSchema.index({ 'group.group_id': 1, message_id: 1 }, { unique: true });
-
+// for requeue query performance
+MessageSchema.index({ ai_status: 1, updatedAt: 1 });
 // Additional indexes for better query performance
 MessageSchema.index({ message_date: 1 });
 MessageSchema.index({ is_valid: 1 });
