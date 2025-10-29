@@ -54,11 +54,11 @@ export const config = {
         intervalMinutes: parseNumber(process.env.EXPIRY_INTERVAL_MINUTES, 1), // Default 1 minute
     },
     processingRecovery: {
-        timeoutMinutes: process.env.MESSAGE_REQUEUE_AFTER_MINUTES, // how long a message can sit in "processing" before we requeue
-        enabled: true
+        timeoutMinutes: parseNumber(process.env.MESSAGE_REQUEUE_AFTER_MINUTES, 5), // how long a message can sit in "processing" before we requeue
+        enabled:  process.env.MESSAGE_REQUEUE_ENABLED !== 'false' || true
     },
     userSeenCleanup: {
-        enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false', // Default true
+        enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false' || true, // Default true
         disableAfterMinutes: parseDurationMinutes({
             minutesEnv: 'USER_SEEN_DISABLE_AFTER_MINUTES',
             hoursEnv: 'USER_SEEN_DISABLE_AFTER_HOURS',
@@ -71,7 +71,7 @@ export const config = {
         })
     },
     playerCleanup: {
-        enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false', // Default true
+        enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false' || true, // Default true
         disableAfterMinutes: parseDurationMinutes({
             minutesEnv: 'PLAYER_DISABLE_AFTER_MINUTES',
             hoursEnv: 'PLAYER_DISABLE_AFTER_HOURS',
