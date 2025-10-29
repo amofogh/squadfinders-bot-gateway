@@ -49,7 +49,7 @@ export const config = {
         listPerPage: parseNumber(process.env.ADMIN_LIST_PER_PAGE, 50),
     },
     autoExpiry: {
-        enabled: process.env.AUTO_EXPIRY_ENABLED !== 'false', // Default true
+        enabled: process.env.AUTO_EXPIRY_ENABLED !== 'false' || true, // Default true
         expiryMinutes: parseNumber(process.env.EXPIRY_MINUTES, 5), // Default 5 minutes
         intervalMinutes: parseNumber(process.env.EXPIRY_INTERVAL_MINUTES, 1), // Default 1 minute
     },
