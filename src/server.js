@@ -143,7 +143,7 @@ app.listen(PORT, () => {
 
     // Start auto-expiry service
     if (config.autoExpiry.enabled) {
-        autoExpiryService.start(); // Use configured interval
+        autoExpiryService.start();
     }
     startRequeueProcessingJob();
 

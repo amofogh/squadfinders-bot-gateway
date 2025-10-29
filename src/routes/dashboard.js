@@ -12,11 +12,35 @@ const router = express.Router();
  *     tags: [Dashboard]
  *     security:
  *       - basicAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [24h, 7d, 30d, thisMonth, lastMonth, all]
+ *           default: 24h
+ *         description: >
+ *           Time window for aggregations based on message_date (>= startDate).
+ *           Supported values:
+ *           - 24h (last 24 hours)
+ *           - 7d  (last 7 days)
+ *           - 30d (last 30 days)
+ *           - thisMonth (from the 1st of current month)
+ *           - lastMonth (from the 1st of previous month)
+ *           - all (no lower bound; epoch)
  *     responses:
  *       200:
- *         description: Dashboard statistics including counts for all models
+ *         description: Dashboard stats
  */
-router.get('/stats', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), dashboardController.getStats);
+router.get(
+    '/stats',
+    authMiddleware,
+    authorizeRole(['superadmin', 'admin', 'viewer']),
+    // (optional) validator below
+    dashboardController.getStats
+);
+
 
 /**
  * @swagger
