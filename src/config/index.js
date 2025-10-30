@@ -59,7 +59,7 @@ export const config = {
         enabled: true
     },
     userSeenCleanup: {
-        enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false', // Default true
+        enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false' || true, // Default true
         disableAfterMinutes: parseDurationMinutes({
             minutesEnv: 'USER_SEEN_DISABLE_AFTER_MINUTES',
             hoursEnv: 'USER_SEEN_DISABLE_AFTER_HOURS',
@@ -72,7 +72,7 @@ export const config = {
         })
     },
     playerCleanup: {
-        enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false', // Default true
+        enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false' || true, // Default true
         disableAfterMinutes: parseDurationMinutes({
             minutesEnv: 'PLAYER_DISABLE_AFTER_MINUTES',
             hoursEnv: 'PLAYER_DISABLE_AFTER_HOURS',
