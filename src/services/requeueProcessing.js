@@ -8,7 +8,7 @@ const log = createServiceLogger('requeue-processing');
 let task = null; // hold the cron task
 
 function runOnce() {
-    const timeoutMinutes = config.processingRecovery?.timeoutMinutes ?? 15;
+    const timeoutMinutes = config.processingRecovery?.timeoutMinutes ?? 5;
     const cutoff = new Date(Date.now() - timeoutMinutes * 60 * 1000);
 
     return Message.updateMany(
@@ -33,11 +33,15 @@ export function startRequeueProcessingJob() {
     }
     if (task) return; // already running
 
-    // run every 5 minutes
-    task = cron.schedule('*/5 * * * *', runOnce);
-    log.info('Processing recovery job scheduled (*/5 * * * *).');
+    const everyMin = Math.max(
+        1,
+        Math.min(59, Number(config.processingRecovery?.intervalMinutes ?? 5))
+    );
+    const cronExpr = `*/${everyMin} * * * *`;
 
-    // optional: kick off immediately on boot
+    task = cron.schedule(cronExpr, runOnce);
+    log.info('Processing recovery job scheduled.', { cronExpr, everyMin });
+
     runOnce();
 }
 
