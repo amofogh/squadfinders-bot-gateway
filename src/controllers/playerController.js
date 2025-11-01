@@ -1,28 +1,45 @@
 import { Player, CanceledUser } from '../models/index.js';
-import { UserSeen } from '../models/index.js';
+import { UserSeen, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import { createServiceLogger } from '../utils/logger.js';
 import createCsvWriter from 'csv-writer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { recordPlayer } from '../services/analyticsService.js';
 
 const playerLogger = createServiceLogger('player-controller');
 
 export const playerController = {
   // Get all players with filtering and pagination
   getAll: handleAsyncError(async (req, res) => {
-    const { active, platform, page = 1, limit = 100 } = req.query;
+    const { active, platform, page = 1, limit = 100, user_id, time } = req.query;
     const query = {};
 
     if (active !== undefined) query.active = active === 'true';
     if (platform) query.platform = platform;
+    if (user_id) query['sender.id'] = user_id;
+
+    let minutesFilter = null;
+    if (time !== undefined) {
+      const parsedMinutes = parseInt(time, 10);
+
+      if (Number.isNaN(parsedMinutes) || parsedMinutes < 0) {
+        return res.status(400).json({ error: 'time must be a non-negative integer representing minutes' });
+      }
+
+      minutesFilter = parsedMinutes;
+      const thresholdDate = new Date(Date.now() - parsedMinutes * 60 * 1000);
+      query.message_date = { ...(query.message_date || {}), $gte: thresholdDate };
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     playerLogger.info('Fetching players', {
       active,
       platform,
+      userId: user_id,
+      minutesFilter,
       page: parseInt(page),
       limit: parseInt(limit)
     });
@@ -86,16 +103,48 @@ export const playerController = {
       user_id: user_id
     });
   }),
-  // Get player by ID or message_id
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
 
-    if (validateObjectId(id)) {
-      player = await Player.findById(id);
-    } else if (validateMessageId(id)) {
-      player = await Player.findOne({ message_id: parseInt(id, 10) });
+  // Deactivate all active players by sender_id
+  deactivateBySenderId: handleAsyncError(async (req, res) => {
+    const { sender_id } = req.body;
+
+    if (!sender_id) {
+      return res.status(400).json({ error: 'sender_id is required' });
     }
+
+    playerLogger.info('Deactivating players for sender', { senderId: sender_id });
+
+    const updateResult = await Player.updateMany(
+      {
+        'sender.id': sender_id,
+        active: true
+      },
+      {
+        $set: { active: false }
+      }
+    );
+
+    playerLogger.info('Deactivated players for sender', {
+      senderId: sender_id,
+      matchedCount: updateResult.matchedCount || 0,
+      modifiedCount: updateResult.modifiedCount || 0
+    });
+
+    res.json({
+      sender_id,
+      matched_count: updateResult.matchedCount || 0,
+      modified_count: updateResult.modifiedCount || 0
+    });
+  }),
+  // Get player by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
+
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    const player = await Player.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
@@ -115,6 +164,35 @@ export const playerController = {
       groupUsername: group?.group_username
     });
 
+
+    if (sender?.id) {
+      const fiveMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const recentPlayer = await Player.findOne({
+        'sender.id': sender.id,
+        createdAt: { $gte: fiveMinutesAgo }
+      });
+
+      if (recentPlayer) {
+        const nextAllowedAt = new Date(recentPlayer.createdAt.getTime() + 5 * 60 * 1000);
+        const retryAfterSeconds = Math.max(
+          0,
+          Math.ceil((nextAllowedAt.getTime() - Date.now()) / 1000)
+        );
+
+        playerLogger.warn('Blocked player creation due to recent activity', {
+          senderId: sender.id,
+          recentMessageId: recentPlayer.message_id,
+          recentCreatedAt: recentPlayer.createdAt
+        });
+
+        return res.status(429).json({
+          error: 'Player was recently created for this user. Please wait before adding again.',
+          user_id: sender.id,
+          recent_message_id: recentPlayer.message_id,
+          retry_after_seconds: retryAfterSeconds
+        });
+      }
+    }
 
     if (sender?.id || sender?.username) {
       const cancellationQuery = [];
@@ -149,7 +227,6 @@ export const playerController = {
       const updateResult = await Player.updateMany(
         {
           'sender.id': sender.id,
-          'group.group_id': group.group_id,
           active: true
         },
         {
@@ -167,6 +244,19 @@ export const playerController = {
     const player = new Player(req.body);
     player.active = true;
     await player.save();
+    
+    // Record analytics
+    if (sender?.id) {
+      await recordPlayer(sender.id, player.message_date);
+      
+      // Update username in analytics if provided
+      if (sender.username) {
+        await UserAnalytics.updateOne(
+          { user_id: sender.id },
+          { $set: { username: sender.username } }
+        );
+      }
+    }
 
     playerLogger.info('Player created successfully', {
       playerId: player._id.toString(),
@@ -177,55 +267,50 @@ export const playerController = {
     res.status(201).json(player);
   }),
 
-  // Update player
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
+  // Update player by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      player = await Player.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true
-      });
-    } else if (validateMessageId(id)) {
-      player = await Player.findOneAndUpdate(
-        { message_id: parseInt(id, 10) },
-        req.body,
-        { new: true, runValidators: true }
-      );
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
+    const player = await Player.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
     if (!player) {
-      playerLogger.warn('Player not found for update', { id });
+      playerLogger.warn('Player not found for update', { message_id });
       return res.status(404).json({ error: 'Player not found' });
     }
 
     playerLogger.info('Player updated successfully', {
-      id,
+      message_id,
       playerId: player._id.toString()
     });
 
     res.json(player);
   }),
 
-  // Delete player
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let player;
+  // Delete player by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      player = await Player.findByIdAndDelete(id);
-    } else if (validateMessageId(id)) {
-      player = await Player.findOneAndDelete({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
+    const player = await Player.findOneAndDelete({ message_id: parseInt(message_id, 10) });
+
     if (!player) {
-      playerLogger.warn('Player not found for deletion', { id });
+      playerLogger.warn('Player not found for deletion', { message_id });
       return res.status(404).json({ error: 'Player not found' });
     }
 
     playerLogger.info('Player deleted successfully', {
-      id,
+      message_id,
       playerId: player._id.toString()
     });
 

@@ -12,25 +12,35 @@ const router = express.Router();
  *     tags: [Dashboard]
  *     security:
  *       - basicAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [24h, 7d, 30d, thisMonth, lastMonth, all]
+ *           default: 24h
+ *         description: >
+ *           Time window for aggregations based on message_date (>= startDate).
+ *           Supported values:
+ *           - 24h (last 24 hours)
+ *           - 7d  (last 7 days)
+ *           - 30d (last 30 days)
+ *           - thisMonth (from the 1st of current month)
+ *           - lastMonth (from the 1st of previous month)
+ *           - all (no lower bound; epoch)
  *     responses:
  *       200:
- *         description: Dashboard statistics including counts for all models
+ *         description: Dashboard stats
  */
-router.get('/stats', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), dashboardController.getStats);
+router.get(
+    '/stats',
+    authMiddleware,
+    authorizeRole(['superadmin', 'admin', 'viewer']),
+    // (optional) validator below
+    dashboardController.getStats
+);
 
-/**
- * @swagger
- * /api/dashboard/platform-distribution:
- *   get:
- *     summary: Get platform distribution
- *     tags: [Dashboard]
- *     security:
- *       - basicAuth: []
- *     responses:
- *       200:
- *         description: Player count by platform
- */
-router.get('/platform-distribution', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), dashboardController.getPlatformDistribution);
 
 /**
  * @swagger
@@ -60,25 +70,5 @@ router.get('/messages-chart', authMiddleware, authorizeRole(['superadmin', 'admi
  */
 router.get('/ai-status-distribution', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), dashboardController.getAIStatusDistribution);
 
-/**
- * @swagger
- * /api/dashboard/deleted-messages-chart:
- *   get:
- *     summary: Get deleted messages chart data
- *     tags: [Dashboard]
- *     security:
- *       - basicAuth: []
- *     parameters:
- *       - in: query
- *         name: timeframe
- *         schema:
- *           type: string
- *           default: "7d"
- *         description: Time range for the chart (e.g., '7d', '30d', '3mo')
- *     responses:
- *       200:
- *         description: Deleted messages count by day with average deletion time
- */
-router.get('/deleted-messages-chart', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), dashboardController.getDeletedMessagesChartData);
 
 export default router;

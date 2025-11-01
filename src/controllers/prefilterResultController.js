@@ -1,6 +1,6 @@
 import { PrefilterResult } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import createCsvWriter from 'csv-writer';
 
 export const prefilterResultController = {
@@ -34,16 +34,15 @@ export const prefilterResultController = {
     });
   }),
 
-  // Get prefilter result by ID or message_id
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let result;
+  // Get prefilter result by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      result = await PrefilterResult.findById(id);
-    } else if (validateMessageId(id)) {
-      result = await PrefilterResult.findOne({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const result = await PrefilterResult.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!result) {
       return res.status(404).json({ error: 'Prefilter result not found' });
@@ -59,23 +58,19 @@ export const prefilterResultController = {
     res.status(201).json(result);
   }),
 
-  // Update prefilter result
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let result;
+  // Update prefilter result by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      result = await PrefilterResult.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true
-      });
-    } else if (validateMessageId(id)) {
-      result = await PrefilterResult.findOneAndUpdate(
-        { message_id: parseInt(id, 10) },
-        req.body,
-        { new: true, runValidators: true }
-      );
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const result = await PrefilterResult.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      req.body,
+      { new: true, runValidators: true }
+    );
 
     if (!result) {
       return res.status(404).json({ error: 'Prefilter result not found' });
@@ -84,16 +79,15 @@ export const prefilterResultController = {
     res.json(result);
   }),
 
-  // Delete prefilter result
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let result;
+  // Delete prefilter result by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      result = await PrefilterResult.findByIdAndDelete(id);
-    } else if (validateMessageId(id)) {
-      result = await PrefilterResult.findOneAndDelete({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const result = await PrefilterResult.findOneAndDelete({ message_id: parseInt(message_id, 10) });
 
     if (!result) {
       return res.status(404).json({ error: 'Prefilter result not found' });

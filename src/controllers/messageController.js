@@ -1,44 +1,13 @@
 import { Message } from '../models/Message.js';
-import { DeletedMessageStats, DailyDeletion, CanceledUser } from '../models/index.js';
+import { CanceledUser, UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { validateObjectId, validateMessageId } from '../utils/validators.js';
+import { validateMessageId } from '../utils/validators.js';
 import { config } from '../config/index.js';
 import { logMessageProcessing, logError, createServiceLogger } from '../utils/logger.js';
+import { recordUserMessage } from '../services/analyticsService.js';
 
 const messageLogger = createServiceLogger('message-controller');
 
-// Helper method to update deletion statistics  
-const updateDeletionStats = async () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Update deletion counts only
-  await Promise.all([
-    // Update overall stats
-    DeletedMessageStats.findOneAndUpdate(
-      {},
-      {
-        $inc: {
-          totalDeleted: 1,
-          deletedToday: 1
-        },
-        $set: { lastResetDate: today }
-      },
-      { upsert: true }
-    ),
-
-    // Update daily stats
-    DailyDeletion.findOneAndUpdate(
-      { date: today },
-      {
-        $inc: {
-          count: 1
-        }
-      },
-      { upsert: true }
-    )
-  ]);
-};
 
 export const messageController = {
   // Get all messages with filtering and pagination
@@ -96,12 +65,12 @@ export const messageController = {
     });
   }),
 
-  // Get unprocessed messages for AI processing
-  getUnprocessed: handleAsyncError(async (req, res) => {
+  // Get pending messages for AI processing
+  getPending: handleAsyncError(async (req, res) => {
     const { limit = 50 } = req.query;
     const maxLimit = Math.min(parseInt(limit), 100);
-    
-    messageLogger.info('getUnprocessed request received', {
+
+    messageLogger.info('getPending request received', {
       requestedLimit: limit,
       maxLimit: maxLimit,
       autoExpiryEnabled: config.autoExpiry.enabled,
@@ -151,7 +120,6 @@ export const messageController = {
 
     // Get recent pending messages and mark them as processing
     const recentPendingMessages = await Message.find({
-      is_valid: true,
       ai_status: 'pending',
       message_date: { $gte: expiryTime }
     })
@@ -187,7 +155,7 @@ export const messageController = {
       });
     }
 
-    messageLogger.info('getUnprocessed response sent', {
+    messageLogger.info('getPending response sent', {
       returnedCount: recentPendingMessages.length,
       requestedLimit: maxLimit
     });
@@ -198,117 +166,15 @@ export const messageController = {
     });
   }),
 
-  // Get pending prefilter messages
-  getPendingPrefilter: handleAsyncError(async (req, res) => {
-    const { limit = 50 } = req.query;
-    const maxLimit = Math.min(parseInt(limit), 100);
-    
-    messageLogger.info('getPendingPrefilter request received', {
-      requestedLimit: limit,
-      maxLimit: maxLimit,
-      autoExpiryEnabled: config.autoExpiry.enabled,
-      expiryMinutes: config.autoExpiry.expiryMinutes
-    });
+  // Get message by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    // Only expire messages if auto-expiry is enabled
-    if (config.autoExpiry.enabled) {
-      const expiryTime = new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000);
-      
-      // Count messages that will be expired
-      const expiredCount = await Message.countDocuments({
-        ai_status: 'pending_prefilter',
-        message_date: { $lt: expiryTime }
-      });
-
-      if (expiredCount > 0) {
-        messageLogger.info('Expiring old pending_prefilter messages', {
-          count: expiredCount,
-          expiryTime: expiryTime.toISOString(),
-          expiryMinutes: config.autoExpiry.expiryMinutes
-        });
-      }
-
-      // First, expire old pending_prefilter messages by changing status to expired
-      const expireResult = await Message.updateMany(
-        {
-          ai_status: 'pending_prefilter',
-          message_date: { $lt: expiryTime }
-        },
-        {
-          $set: { ai_status: 'expired' }
-        }
-      );
-
-      if (expireResult.modifiedCount > 0) {
-        messageLogger.info('Expired old pending_prefilter messages', {
-          expiredCount: expireResult.modifiedCount,
-          expiryTime: expiryTime.toISOString()
-        });
-      }
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    const expiryTime = config.autoExpiry.enabled 
-      ? new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000)
-      : new Date(0); // If disabled, get all messages
-
-    // Get recent pending_prefilter messages and mark them as pending
-    const pendingPrefilterMessages = await Message.find({
-      ai_status: 'pending_prefilter',
-      message_date: { $gte: expiryTime }
-    })
-    .sort({ message_date: 1 }) // Oldest first
-    .limit(maxLimit);
-
-    messageLogger.info('Found pending_prefilter messages', {
-      foundCount: pendingPrefilterMessages.length,
-      requestedLimit: maxLimit,
-      oldestMessageDate: pendingPrefilterMessages.length > 0 ? pendingPrefilterMessages[0].message_date.toISOString() : null,
-      newestMessageDate: pendingPrefilterMessages.length > 0 ? pendingPrefilterMessages[pendingPrefilterMessages.length - 1].message_date.toISOString() : null
-    });
-
-    // Mark these messages as pending
-    if (pendingPrefilterMessages.length > 0) {
-      const messageIds = pendingPrefilterMessages.map(msg => msg._id);
-      const messageIdNumbers = pendingPrefilterMessages.map(msg => msg.message_id);
-      
-      messageLogger.info('Marking messages as pending', {
-        count: messageIds.length,
-        messageIds: messageIdNumbers.slice(0, 10), // Log first 10 IDs
-        totalIds: messageIdNumbers.length
-      });
-
-      await Message.updateMany(
-        { _id: { $in: messageIds } },
-        { $set: { ai_status: 'pending' } }
-      );
-
-      // Update the status in the returned data
-      pendingPrefilterMessages.forEach(msg => {
-        msg.ai_status = 'pending';
-      });
-    }
-
-    messageLogger.info('getPendingPrefilter response sent', {
-      returnedCount: pendingPrefilterMessages.length,
-      requestedLimit: maxLimit
-    });
-
-    res.json({
-      data: pendingPrefilterMessages,
-      count: pendingPrefilterMessages.length
-    });
-  }),
-
-  // Get message by ID or message_id
-  getById: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
-
-    if (validateObjectId(id)) {
-      message = await Message.findById(id);
-    } else if (validateMessageId(id)) {
-      message = await Message.findOne({ message_id: parseInt(id, 10) });
-    }
+    const message = await Message.findOne({ message_id: parseInt(message_id, 10) });
 
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
@@ -320,7 +186,7 @@ export const messageController = {
   // Create new message
   create: handleAsyncError(async (req, res) => {
     const { sender, group, message } = req.body;
-    
+
     messageLogger.info('Creating new message', {
       senderId: sender?.id,
       senderUsername: sender?.username,
@@ -329,29 +195,34 @@ export const messageController = {
       messageLength: message?.length
     });
 
-    // Spam validation: Check if the same sender in the same group has posted the exact same message in the past hour
+    // Spam validation: Check if the same sender in the same group has posted the exact same message in the configured window
     if (sender && sender.id && group && group.group_id && message) {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      
-      const existingMessage = await Message.findOne({
-        'sender.id': sender.id,
-        'group.group_id': group.group_id,
-        message: message,
-        message_date: { $gte: oneHourAgo }
-      });
-      
-      if (existingMessage) {
-        messageLogger.warn('Duplicate message detected', {
-          senderId: sender.id,
-          groupId: group.group_id,
-          existingMessageId: existingMessage.message_id,
-          existingMessageDate: existingMessage.message_date.toISOString()
+      const spamWindowMinutes = Math.max(config.messageSpam?.windowMinutes ?? 60, 0);
+
+      if (spamWindowMinutes > 0) {
+        const spamWindowStart = new Date(Date.now() - spamWindowMinutes * 60 * 1000);
+
+        const existingMessage = await Message.findOne({
+          'sender.id': sender.id,
+          'group.group_id': group.group_id,
+          message: message,
+          message_date: { $gte: spamWindowStart }
         });
 
-        return res.status(409).json({ 
-          error: 'Duplicate message detected',
-          message: 'This sender has already posted the same message in this group within the past hour'
-        });
+        if (existingMessage) {
+          messageLogger.warn('Duplicate message detected', {
+            senderId: sender.id,
+            groupId: group.group_id,
+            existingMessageId: existingMessage.message_id,
+            existingMessageDate: existingMessage.message_date.toISOString(),
+            spamWindowMinutes
+          });
+
+          return res.status(409).json({
+            error: 'Duplicate message detected',
+            message: `This sender has already posted the same message in this group within the past ${spamWindowMinutes} minutes`
+          });
+        }
       }
     }
     
@@ -384,6 +255,19 @@ export const messageController = {
     const newMessage = new Message(messageData);
     await newMessage.save();
     
+    // Record analytics
+    if (sender?.id) {
+      await recordUserMessage(sender.id, newMessage.message_date);
+      
+      // Update username in analytics if provided
+      if (sender.username) {
+        await UserAnalytics.updateOne(
+          { user_id: sender.id },
+          { $set: { username: sender.username } }
+        );
+      }
+    }
+    
     messageLogger.info('Message created successfully', {
       messageId: newMessage.message_id,
       aiStatus: newMessage.ai_status,
@@ -393,23 +277,19 @@ export const messageController = {
     res.status(201).json(newMessage);
   }),
 
-  // Update message
-  update: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
+  // Update message by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      message = await Message.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true
-      });
-    } else if (validateMessageId(id)) {
-      message = await Message.findOneAndUpdate(
-        { message_id: parseInt(id, 10) },
-        req.body,
-        { new: true, runValidators: true }
-      );
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const message = await Message.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      req.body,
+      { new: true, runValidators: true }
+    );
 
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
@@ -418,29 +298,18 @@ export const messageController = {
     res.json(message);
   }),
 
-  // Delete message
-  delete: handleAsyncError(async (req, res) => {
-    const { id } = req.params;
-    let message;
+  // Delete message by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
-    if (validateObjectId(id)) {
-      message = await Message.findById(id);
-    } else if (validateMessageId(id)) {
-      message = await Message.findOne({ message_id: parseInt(id, 10) });
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
+
+    const message = await Message.findOneAndDelete({ message_id: parseInt(message_id, 10) });
 
     if (!message) {
         return res.status(404).json({ error: 'Message not found' });
-    }
-
-    // Update deletion statistics
-    await updateDeletionStats();
-
-    // Delete the original message
-    if (validateObjectId(id)) {
-      await Message.findByIdAndDelete(id);
-    } else if (validateMessageId(id)) {
-      await Message.findOneAndDelete({ message_id: parseInt(id, 10) });
     }
 
     res.json({

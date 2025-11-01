@@ -59,25 +59,26 @@ router.get('/', authMiddleware, authorizeRole(['superadmin']), adminUserControll
 
 /**
  * @swagger
- * /api/admin-users/{id}:
+ * /api/admin-users/{email}:
  *   get:
-*     summary: Get admin user by ID (SuperAdmin only)
+ *     summary: Get admin user by email (SuperAdmin only)
  *     tags: [Admin Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
+ *           format: email
  *     responses:
  *       200:
  *         description: Admin user details
  *       404:
  *         description: Admin user not found
  */
-router.get('/:id', authMiddleware, authorizeRole(['superadmin']), adminUserController.getById);
+router.get('/:email', authMiddleware, authorizeRole(['superadmin']), adminUserController.getByEmail);
 
 /**
  * @swagger
@@ -101,18 +102,19 @@ router.post('/', authMiddleware, authorizeRole(['superadmin']), adminUserControl
 
 /**
  * @swagger
- * /api/admin-users/{id}:
+ * /api/admin-users/{email}:
  *   put:
-*     summary: Update admin user (SuperAdmin only)
+ *     summary: Update admin user by email (SuperAdmin only)
  *     tags: [Admin Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
+ *           format: email
  *     requestBody:
  *       required: true
  *       content:
@@ -123,22 +125,23 @@ router.post('/', authMiddleware, authorizeRole(['superadmin']), adminUserControl
  *       200:
  *         description: Admin user updated successfully
  */
-router.put('/:id', authMiddleware, authorizeRole(['superadmin']), adminUserController.update);
+router.put('/:email', authMiddleware, authorizeRole(['superadmin']), adminUserController.updateByEmail);
 
 /**
  * @swagger
- * /api/admin-users/{id}:
+ * /api/admin-users/{email}:
  *   patch:
-*     summary: Partially update admin user (SuperAdmin only)
+ *     summary: Partially update admin user by email (SuperAdmin only)
  *     tags: [Admin Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
+ *           format: email
  *     requestBody:
  *       required: true
  *       content:
@@ -149,26 +152,27 @@ router.put('/:id', authMiddleware, authorizeRole(['superadmin']), adminUserContr
  *       200:
  *         description: Admin user updated successfully
  */
-router.patch('/:id', authMiddleware, authorizeRole(['superadmin']), adminUserController.update);
+router.patch('/:email', authMiddleware, authorizeRole(['superadmin']), adminUserController.updateByEmail);
 
 /**
  * @swagger
- * /api/admin-users/{id}:
+ * /api/admin-users/{email}:
  *   delete:
-*     summary: Delete admin user (SuperAdmin only)
+ *     summary: Delete admin user by email (SuperAdmin only)
  *     tags: [Admin Users]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: email
  *         required: true
  *         schema:
  *           type: string
+ *           format: email
  *     responses:
  *       200:
  *         description: Admin user deleted successfully
  */
-router.delete('/:id', authMiddleware, authorizeRole(['superadmin']), adminUserController.delete);
+router.delete('/:email', authMiddleware, authorizeRole(['superadmin']), adminUserController.deleteByEmail);
 
 export default router;

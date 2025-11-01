@@ -1,11 +1,11 @@
 import AdminJS from 'adminjs';
 import * as AdminJSMongoose from '@adminjs/mongoose';
-import { Player, Message, AdminUser, MessageReaction } from '../models/index.js';
-import { DeletedMessageStats, DailyDeletion } from '../models/index.js';
+import { Player, Message, AdminUser } from '../models/index.js';
 import { PrefilterResult } from '../models/index.js';
 import { GamingGroup } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { CanceledUser, UserMessage } from '../models/index.js';
+import { Reaction, UserAnalytics } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
 import { config } from './index.js';
 
@@ -91,6 +91,16 @@ export const adminJS = new AdminJS({
       };
     }
   },
+  pages: {
+    'user-analytics': {
+      label: 'User Analytics',
+      icon: 'Activity',
+      component: componentLoader.add('UserAnalyticsDashboard', '../components/UserAnalyticsDashboard'),
+      handler: async (request, response, context) => ({
+        currentAdmin: context.currentAdmin
+      })
+    }
+  },
   resources: [
     {
       resource: Player,
@@ -118,6 +128,7 @@ export const adminJS = new AdminJS({
         filterProperties: [
           'platform',
           'active',
+          'sender.id',
           'sender.username',
           'group.group_username',
           'message_date',
@@ -167,7 +178,6 @@ export const adminJS = new AdminJS({
               { value: 'completed', label: 'Completed' },
               { value: 'failed', label: 'Failed' },
               { value: 'expired', label: 'Expired' },
-              { value: 'pending_prefilter', label: 'Pending Prefilter' },
               { value: 'canceled_by_user', label: 'Canceled by User' },
             ],
           },
@@ -185,6 +195,7 @@ export const adminJS = new AdminJS({
         filterProperties: [
           'message_id',
           'group.group_username',
+          'sender.id',
           'sender.username',
           'message_date',
           'is_valid',
@@ -211,42 +222,6 @@ export const adminJS = new AdminJS({
       }
     },
     {
-        resource: DeletedMessageStats,
-        options: {
-            name: 'Deletion Stats',
-            parent: {
-                name: 'Analytics',
-                icon: 'Archive'
-            },
-            actions: withDefaultListPerPage({
-              new: { isAccessible: false },
-              edit: { isAccessible: false },
-              delete: { isAccessible: isAdmin },
-              bulkDelete: { isAccessible: isAdmin },
-              list: { isAccessible: true },
-              show: { isAccessible: true },
-            }),
-        }
-    },
-    {
-        resource: DailyDeletion,
-        options: {
-            name: 'Daily Deletions',
-            parent: {
-                name: 'Analytics',
-                icon: 'Archive'
-            },
-            actions: withDefaultListPerPage({
-              new: { isAccessible: false },
-              edit: { isAccessible: false },
-              delete: { isAccessible: isAdmin },
-              bulkDelete: { isAccessible: isAdmin },
-              list: { isAccessible: true },
-              show: { isAccessible: true },
-            }),
-        }
-    },
-    {
       resource: PrefilterResult,
       options: {
         list: {
@@ -254,7 +229,7 @@ export const adminJS = new AdminJS({
         },
         actions: viewerRole,
         navigation: {
-          name: 'Game Data',
+          name: 'AI Results',
           icon: 'Filter'
         },
         sort: {
@@ -293,7 +268,7 @@ export const adminJS = new AdminJS({
         },
         actions: adminRole,
         navigation: {
-          name: 'Game Data',
+          name: 'Settings',
           icon: 'Users'
         },
         sort: {
@@ -338,7 +313,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'Eye'
         },
         sort: {
@@ -374,7 +349,7 @@ export const adminJS = new AdminJS({
         },
         actions: adminRole,
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'UserX'
         },
         sort: {
@@ -414,7 +389,7 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Game Data',
+          name: 'User Engagement',
           icon: 'MessageCircle'
         },
         sort: {
@@ -443,7 +418,7 @@ export const adminJS = new AdminJS({
       }
     },
     {
-      resource: MessageReaction,
+      resource: Reaction,
       options: {
         list: {
           perPage: DEFAULT_LIST_PER_PAGE,
@@ -457,36 +432,94 @@ export const adminJS = new AdminJS({
           show: { isAccessible: true },
         }),
         navigation: {
-          name: 'Engagement',
-          icon: 'ThumbsUp'
+          name: 'User Engagement',
+          icon: 'Heart'
         },
         sort: {
-          sortBy: 'reacted_at',
+          sortBy: 'message_date',
           direction: 'desc'
         },
         listProperties: [
-          'message_id',
           'user_id',
           'username',
-          'reaction',
-          'reacted_at',
-          'source'
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'message_date'
         ],
         filterProperties: [
-          'message_id',
-          'user_id',
-          'reaction',
-          'source',
-          'reacted_at'
-        ],
-        showProperties: [
-          'message_id',
           'user_id',
           'username',
-          'reaction',
-          'reacted_at',
-          'source',
-          'metadata',
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'message_date'
+        ],
+        showProperties: [
+          'user_id',
+          'username',
+          'chat_id',
+          'message_id',
+          'emoji',
+          'type',
+          'message_date',
+          'meta',
+          'createdAt',
+          'updatedAt'
+        ]
+      }
+    },
+    {
+      resource: UserAnalytics,
+      options: {
+        list: {
+          perPage: DEFAULT_LIST_PER_PAGE,
+        },
+        actions: withDefaultListPerPage({
+          new: { isAccessible: false },
+          edit: { isAccessible: isAdmin },
+          delete: { isAccessible: isAdmin },
+          bulkDelete: { isAccessible: isAdmin },
+          list: { isAccessible: true },
+          show: { isAccessible: true },
+        }),
+        navigation: {
+          name: 'User Engagement',
+          icon: 'BarChart'
+        },
+        sort: {
+          sortBy: 'updatedAt',
+          direction: 'desc'
+        },
+        listProperties: [
+          'user_id',
+          'username',
+          'is_canceled',
+          'messages.total',
+          'reactions.total',
+          'player.count',
+          'dm.total_sent'
+        ],
+        filterProperties: [
+          'user_id',
+          'username',
+          'is_canceled'
+        ],
+        showProperties: [
+          'user_id',
+          'username',
+          'is_canceled',
+          'last_canceled_at',
+          'last_resumed_at',
+          'dm',
+          'messages',
+          'reactions',
+          'player',
+          'seen',
+          'status_history',
+          'daily',
           'createdAt',
           'updatedAt'
         ]
@@ -498,7 +531,24 @@ export const adminJS = new AdminJS({
         list: {
             perPage: DEFAULT_LIST_PER_PAGE,
         },
-        actions: superAdminRole,
+        actions: withDefaultListPerPage({
+          new: { isAccessible: isSuperAdmin },
+          edit: {
+            isAccessible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return false;
+              if (currentAdmin.role === 'superadmin') return true;
+              if (currentAdmin.role === 'admin') {
+                // Admin can edit viewer and admin roles, but not superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            }
+          },
+          delete: { isAccessible: isSuperAdmin },
+          bulkDelete: { isAccessible: isSuperAdmin },
+          list: { isAccessible: isAdmin },
+          show: { isAccessible: isAdmin },
+        }),
         navigation: {
           name: 'Administration',
           icon: 'Shield'
@@ -511,10 +561,15 @@ export const adminJS = new AdminJS({
           role: {
             isVisible: {
               list: true,
+              filter: true,
               show: true,
-              edit: false,
-              filter: true
-            }
+              edit: true
+            },
+            availableValues: [
+              { value: 'superadmin', label: 'Super Admin' },
+              { value: 'admin', label: 'Admin' },
+              { value: 'viewer', label: 'Viewer' }
+            ]
           },
           password: {
             isVisible: {
@@ -522,6 +577,29 @@ export const adminJS = new AdminJS({
               show: false,
               edit: true,
               filter: false
+            }
+          }
+        },
+        actions: {
+          ...superAdminRole,
+          edit: {
+            isAccessible: ({ currentAdmin, record }) => {
+              if (!currentAdmin) return [];
+              if (currentAdmin.role === 'superadmin') {
+                return true;
+              }
+              if (currentAdmin.role === 'admin') {
+                // Admin can edit viewer and admin roles, but not superadmin
+                return record?.params?.role !== 'superadmin';
+              }
+              return false;
+            },
+            before: async (request, { currentAdmin }) => {
+              // Prevent admins from setting role to superadmin
+              if (currentAdmin?.role === 'admin' && request.payload?.role === 'superadmin') {
+                throw new Error('Admins cannot assign superadmin role');
+              }
+              return request;
             }
           }
         }
@@ -543,8 +621,6 @@ export const adminJS = new AdminJS({
           adminUsers: 'Admin Users',
           PrefilterResult: 'Prefilter Result',
           prefilterResults: 'Prefilter Results',
-          DeletedMessageStats: 'Deletion Stats',
-          DailyDeletion: 'Daily Deletions',
           GamingGroup: 'Gaming Group',
           gamingGroups: 'Gaming Groups',
           UserSeen: 'User Seen',
@@ -553,23 +629,16 @@ export const adminJS = new AdminJS({
           canceledUsers: 'Canceled Users',
           UserMessage: 'User Message',
           userMessages: 'User Messages',
-          MessageReaction: 'Message Reaction',
-          messageReactions: 'Message Reactions'
+          Reaction: 'Reaction',
+          reactions: 'Reactions',
+          UserAnalytics: 'User Analytics',
+          userAnalytics: 'User Analytics'
         }
       }
     }
   },
   branding: {
     companyName: 'SquadFinders',
-    logo: false,
-    theme: {
-      colors: {
-        primary100: '#667eea',
-        primary80: '#764ba2',
-        primary60: '#f093fb',
-        primary40: '#4facfe',
-        primary20: '#00f2fe'
-      }
-    }
+    logo: false
   }
 });

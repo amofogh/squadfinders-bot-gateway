@@ -8,104 +8,66 @@ const router = express.Router();
  * @swagger
  * components:
  *   schemas:
- *     MessageReaction:
+ *     Reaction:
  *       type: object
  *       required:
- *         - message_id
  *         - user_id
- *         - reaction
+ *         - chat_id
+ *         - message_id
+ *         - emoji
  *       properties:
- *         message_id:
- *           type: integer
- *           description: Telegram message identifier
  *         user_id:
  *           type: string
- *           description: Telegram user identifier
+ *           description: User identifier
  *         username:
  *           type: string
- *         reaction:
+ *           description: Username
+ *         chat_id:
  *           type: string
- *           enum: ['👍', '❤️', '👎']
- *         reacted_at:
+ *           description: Chat identifier
+ *         message_id:
+ *           type: number
+ *           description: Message identifier
+ *         emoji:
+ *           type: string
+ *           description: Reaction emoji
+ *         type:
+ *           type: string
+ *           enum: [add, remove]
+ *           default: add
+ *         message_date:
  *           type: string
  *           format: date-time
- *           description: When the reaction was recorded
- *         source:
- *           type: string
- *           description: Source system that emitted the reaction event
- *         metadata:
+ *         meta:
  *           type: object
- *           additionalProperties: true
- *           description: Optional payload for debugging/tracing the event
- *
- *     ReactionSummary:
- *       type: object
- *       properties:
- *         range:
- *           type: object
- *           properties:
- *             start:
- *               type: string
- *               format: date-time
- *             end:
- *               type: string
- *               format: date-time
- *         totals:
- *           type: object
- *           properties:
- *             messagesAnalyzed:
- *               type: integer
- *             messagesWithReactions:
- *               type: integer
- *             uniqueRecipients:
- *               type: integer
- *             totalDeliveries:
- *               type: integer
- *             totalReactions:
- *               type: integer
- *             uniqueReactors:
- *               type: integer
- *             positiveReactions:
- *               type: integer
- *             negativeReactions:
- *               type: integer
- *             neutralReactions:
- *               type: integer
- *             netScore:
- *               type: integer
- *         rates:
- *           type: object
- *           properties:
- *             reactionPerDelivery:
- *               type: number
- *             reactionPerMessage:
- *               type: number
- *             uniqueEngagementRate:
- *               type: number
- *             positivityRate:
- *               type: number
- *             coverageRate:
- *               type: number
- *         breakdown:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               reaction:
- *                 type: string
- *               count:
- *                 type: integer
+ *           description: Additional metadata
  */
 
 /**
  * @swagger
  * /api/reactions:
  *   get:
- *     summary: List recorded reactions
+ *     summary: Get all reactions
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
+ *       - in: query
+ *         name: user_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: chat_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: message_id
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: emoji
+ *         schema:
+ *           type: string
  *       - in: query
  *         name: page
  *         schema:
@@ -116,44 +78,39 @@ const router = express.Router();
  *         schema:
  *           type: integer
  *           default: 100
- *       - in: query
- *         name: message_id
- *         schema:
- *           type: integer
- *       - in: query
- *         name: user_id
- *         schema:
- *           type: string
- *       - in: query
- *         name: reaction
- *         schema:
- *           type: string
- *           enum: ['👍', '❤️', '👎']
- *       - in: query
- *         name: source
- *         schema:
- *           type: string
- *       - in: query
- *         name: since
- *         schema:
- *           type: string
- *           format: date-time
- *       - in: query
- *         name: until
- *         schema:
- *           type: string
- *           format: date-time
  *     responses:
  *       200:
- *         description: Paginated list of reactions
+ *         description: List of reactions with pagination
  */
-router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.list);
+router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getAll);
+
+/**
+ * @swagger
+ * /api/reactions/{message_id}:
+ *   get:
+ *     summary: Get reaction by message_id
+ *     tags: [Reactions]
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: message_id
+ *         required: true
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: Reaction details
+ *       404:
+ *         description: Reaction not found
+ */
+router.get('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getByMessageId);
 
 /**
  * @swagger
  * /api/reactions:
  *   post:
- *     summary: Record a reaction event
+ *     summary: Create new reaction (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
@@ -162,88 +119,83 @@ router.get('/', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer'])
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/MessageReaction'
+ *             $ref: '#/components/schemas/Reaction'
  *     responses:
  *       201:
- *         description: Reaction recorded
+ *         description: Reaction created successfully
  */
 router.post('/', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.create);
 
 /**
  * @swagger
- * /api/reactions/summary:
- *   get:
- *     summary: Get engagement summary for a timeframe
- *     tags: [Reactions]
- *     security:
- *       - basicAuth: []
- *     parameters:
- *       - in: query
- *         name: timeframe
- *         schema:
- *           type: string
- *           example: 30d
- *         description: Relative timeframe (e.g. 24h, 7d, 1y)
- *       - in: query
- *         name: since
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Absolute start date (overrides timeframe)
- *       - in: query
- *         name: until
- *         schema:
- *           type: string
- *           format: date-time
- *         description: Absolute end date (overrides timeframe)
- *     responses:
- *       200:
- *         description: Engagement summary
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ReactionSummary'
- */
-router.get('/summary', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getSummary);
-
-/**
- * @swagger
- * /api/reactions/messages/{messageId}:
- *   get:
- *     summary: Get engagement metrics for a specific message
+ * /api/reactions/{message_id}:
+ *   put:
+ *     summary: Update reaction by message_id (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: messageId
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: number
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Reaction'
  *     responses:
  *       200:
- *         description: Message engagement details
+ *         description: Reaction updated successfully
  */
-router.get('/messages/:messageId', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getMessageSummary);
+router.put('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.updateByMessageId);
 
 /**
  * @swagger
- * /api/reactions/users/{userId}:
- *   get:
- *     summary: Get engagement profile for a specific user
+ * /api/reactions/{message_id}:
+ *   patch:
+ *     summary: Partially update reaction by message_id (Admin only)
  *     tags: [Reactions]
  *     security:
  *       - basicAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: message_id
  *         required: true
  *         schema:
- *           type: string
+ *           type: number
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Reaction'
  *     responses:
  *       200:
- *         description: User engagement profile
+ *         description: Reaction updated successfully
  */
-router.get('/users/:userId', authMiddleware, authorizeRole(['superadmin', 'admin', 'viewer']), reactionController.getUserSummary);
+router.patch('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.updateByMessageId);
+
+/**
+ * @swagger
+ * /api/reactions/{message_id}:
+ *   delete:
+ *     summary: Delete reaction by message_id (Admin only)
+ *     tags: [Reactions]
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: message_id
+ *         required: true
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: Reaction deleted successfully
+ */
+router.delete('/:message_id', authMiddleware, authorizeRole(['superadmin', 'admin']), reactionController.deleteByMessageId);
 
 export default router;

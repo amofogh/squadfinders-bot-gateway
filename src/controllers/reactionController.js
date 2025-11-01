@@ -1,173 +1,147 @@
-import { engagementMetricsService } from '../services/engagementMetricsService.js';
+import { Reaction } from '../models/Reaction.js';
+import { UserAnalytics } from '../models/index.js';
 import { handleAsyncError } from '../utils/errorHandler.js';
-import { createServiceLogger } from '../utils/logger.js';
-import { parseDateInput, resolveTimeRange } from '../utils/timeRange.js';
 import { validateMessageId } from '../utils/validators.js';
-import { MESSAGE_REACTIONS } from '../models/MessageReaction.js';
+import { recordReaction } from '../services/analyticsService.js';
+import { createServiceLogger } from '../utils/logger.js';
 
 const reactionLogger = createServiceLogger('reaction-controller');
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 100;
-
-const parsePagination = (value, fallback) => {
-  const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return parsed;
-};
-
 export const reactionController = {
-  create: handleAsyncError(async (req, res) => {
-    const { message_id, user_id, username, reaction, reacted_at, source, metadata } = req.body;
+  // Get all reactions with pagination
+  getAll: handleAsyncError(async (req, res) => {
+    const { page = 1, limit = 100, user_id, chat_id, message_id, emoji } = req.query;
+    const query = {};
+    
+    if (user_id) query.user_id = user_id;
+    if (chat_id) query.chat_id = chat_id;
+    if (message_id) query.message_id = parseInt(message_id);
+    if (emoji) query.emoji = emoji;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const [reactions, total] = await Promise.all([
+      Reaction.find(query)
+        .sort({ message_date: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Reaction.countDocuments(query)
+    ]);
+
+    res.json({
+      data: reactions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  }),
+
+  // Get reaction by message_id
+  getByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
 
     if (!validateMessageId(message_id)) {
-      return res.status(400).json({ error: 'message_id must be an integer' });
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    if (!user_id || typeof user_id !== 'string') {
-      return res.status(400).json({ error: 'user_id is required' });
+    const reaction = await Reaction.findOne({ message_id: parseInt(message_id, 10) });
+
+    if (!reaction) {
+      return res.status(404).json({ error: 'Reaction not found' });
     }
 
-    if (!reaction || !MESSAGE_REACTIONS.includes(reaction)) {
-      return res.status(400).json({ error: `reaction must be one of ${MESSAGE_REACTIONS.join(', ')}` });
-    }
-
-    let reactionDate = undefined;
-    if (reacted_at) {
-      const parsedDate = parseDateInput(reacted_at);
-      if (!parsedDate) {
-        return res.status(400).json({ error: 'reacted_at must be a valid ISO date' });
-      }
-      reactionDate = parsedDate;
-    }
-
-    if (metadata && typeof metadata !== 'object') {
-      return res.status(400).json({ error: 'metadata must be an object if provided' });
-    }
-
-    const recorded = await engagementMetricsService.recordReaction({
-      message_id: Number.parseInt(message_id, 10),
-      user_id,
-      username,
-      reaction,
-      reacted_at: reactionDate,
-      source,
-      metadata: metadata ?? null
-    });
-
-    reactionLogger.info('Reaction recorded', {
-      message_id: recorded.message_id,
-      user_id: recorded.user_id,
-      reaction: recorded.reaction
-    });
-
-    res.status(201).json(recorded);
+    res.json(reaction);
   }),
 
-  list: handleAsyncError(async (req, res) => {
-    const {
-      page = DEFAULT_PAGE,
-      limit = DEFAULT_LIMIT,
-      message_id,
-      user_id,
-      reaction,
-      source,
-      since,
-      until
-    } = req.query;
+  // Create new reaction
+  create: handleAsyncError(async (req, res) => {
+    const payload = { ...req.body };
 
-    const resolvedPage = parsePagination(page, DEFAULT_PAGE);
-    const resolvedLimit = parsePagination(limit, DEFAULT_LIMIT);
+    if (payload.at && !payload.message_date) {
+      payload.message_date = payload.at;
+    }
 
-    if (message_id !== undefined && message_id !== null && message_id !== '') {
-      if (!validateMessageId(message_id)) {
-        return res.status(400).json({ error: 'message_id must be an integer' });
+    delete payload.at;
+
+    const reaction = new Reaction(payload);
+    await reaction.save();
+
+    // Record analytics
+    if (reaction.user_id && reaction.emoji) {
+      const reactionTimestamp = reaction.message_date || reaction.at || new Date();
+      await recordReaction(reaction.user_id, reaction.emoji, reactionTimestamp);
+      
+      // Update username in analytics if provided
+      if (reaction.username) {
+        await UserAnalytics.updateOne(
+          { user_id: reaction.user_id },
+          { $set: { username: reaction.username } }
+        );
       }
     }
+    
+    reactionLogger.info('Reaction created successfully', {
+      reactionId: reaction._id.toString(),
+      userId: reaction.user_id,
+      emoji: reaction.emoji
+    });
+    
+    res.status(201).json(reaction);
+  }),
 
-    if (reaction && !MESSAGE_REACTIONS.includes(reaction)) {
-      return res.status(400).json({ error: `reaction must be one of ${MESSAGE_REACTIONS.join(', ')}` });
+  // Update reaction by message_id
+  updateByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
+
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
     }
 
-    let start = null;
-    let end = null;
+    const updatePayload = { ...req.body };
 
-    if (since || until) {
-      start = parseDateInput(since);
-      end = parseDateInput(until);
-
-      if ((since && !start) || (until && !end) || (start && end && start > end)) {
-        return res.status(400).json({ error: 'Invalid date range supplied' });
-      }
+    if (updatePayload.at && !updatePayload.message_date) {
+      updatePayload.message_date = updatePayload.at;
     }
 
-    const data = await engagementMetricsService.listReactions({
-      page: resolvedPage,
-      limit: resolvedLimit,
-      messageId: message_id,
-      userId: user_id,
-      reaction,
-      source,
-      start,
-      end
+    delete updatePayload.at;
+
+    const reaction = await Reaction.findOneAndUpdate(
+      { message_id: parseInt(message_id, 10) },
+      updatePayload,
+      { new: true, runValidators: true }
+    );
+
+    if (!reaction) {
+      return res.status(404).json({ error: 'Reaction not found' });
+    }
+
+    res.json(reaction);
+  }),
+
+  // Delete reaction by message_id
+  deleteByMessageId: handleAsyncError(async (req, res) => {
+    const { message_id } = req.params;
+
+    if (!validateMessageId(message_id)) {
+      return res.status(400).json({ error: 'Invalid message ID' });
+    }
+
+    const reaction = await Reaction.findOneAndDelete({ message_id: parseInt(message_id, 10) });
+
+    if (!reaction) {
+      return res.status(404).json({ error: 'Reaction not found' });
+    }
+
+    reactionLogger.info('Deleted reaction for message', {
+      messageId: parseInt(message_id, 10)
     });
 
-    res.json(data);
-  }),
-
-  getSummary: handleAsyncError(async (req, res) => {
-    const { timeframe, since, until } = req.query;
-
-    let range = null;
-
-    if (since || until) {
-      const start = parseDateInput(since);
-      const end = parseDateInput(until);
-      if ((since && !start) || (until && !end) || (start && end && start > end)) {
-        return res.status(400).json({ error: 'Invalid date range supplied' });
-      }
-      range = { start: start ?? null, end: end ?? null };
-    } else {
-      range = resolveTimeRange({ timeframe });
-      if (!range) {
-        return res.status(400).json({ error: 'Invalid timeframe supplied' });
-      }
-    }
-
-    const summary = await engagementMetricsService.getGlobalSummary({
-      start: range.start,
-      end: range.end
+    res.json({
+      message: 'Reaction deleted successfully',
+      deletedCount: 1
     });
-
-    res.json(summary);
-  }),
-
-  getMessageSummary: handleAsyncError(async (req, res) => {
-    const { messageId } = req.params;
-
-    if (!validateMessageId(messageId)) {
-      return res.status(400).json({ error: 'messageId must be an integer' });
-    }
-
-    const summary = await engagementMetricsService.getMessageSummary(Number.parseInt(messageId, 10));
-
-    if (!summary) {
-      return res.status(404).json({ error: 'Message not found' });
-    }
-
-    res.json(summary);
-  }),
-
-  getUserSummary: handleAsyncError(async (req, res) => {
-    const { userId } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-    const summary = await engagementMetricsService.getUserSummary(userId);
-    res.json(summary);
   })
 };
