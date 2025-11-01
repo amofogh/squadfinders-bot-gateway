@@ -166,7 +166,7 @@ export const playerController = {
 
 
     if (sender?.id) {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      const fiveMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
       const recentPlayer = await Player.findOne({
         'sender.id': sender.id,
         createdAt: { $gte: fiveMinutesAgo }
