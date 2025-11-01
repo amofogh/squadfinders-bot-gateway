@@ -37,6 +37,14 @@ const Dashboard = (props) => {
     const [refreshInterval, setRefreshInterval] = useState(30); // seconds
     const [refreshIntervalId, setRefreshIntervalId] = useState(null);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [botSummary, setBotSummary] = useState(null);
+
+    const BOT_BUTTON_CONFIGS = {
+        findplayer: {label: 'Find Player', icon: '🎯', color: '#4d96ff'},
+        cancelplayer: {label: 'Cancel Player', icon: '🚫', color: '#ff6b6b'},
+        aboutus: {label: 'About Us', icon: 'ℹ️', color: '#764ba2'},
+        ourchannel: {label: 'Our Channel', icon: '📢', color: '#f093fb'}
+    };
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -189,11 +197,13 @@ const Dashboard = (props) => {
             const [
                 statsResponse,
                 aiStatusResponse,
-                messagesChartResponse
+                messagesChartResponse,
+                botSummaryResponse
             ] = await Promise.all([
                 fetch('/api/dashboard/stats?timeRange=all', fetchOptions),
                 fetch('/api/dashboard/ai-status-distribution', fetchOptions),
-                fetch(`/api/dashboard/messages-chart?timeframe=${timeRange}`, fetchOptions)
+                fetch(`/api/dashboard/messages-chart?timeframe=${timeRange}`, fetchOptions),
+                fetch('/api/bot-user-stats/summary', fetchOptions)
             ]);
 
             if (!statsResponse.ok) {
@@ -213,6 +223,13 @@ const Dashboard = (props) => {
             if (!messagesChartResponse.ok) throw new Error('Failed to fetch messages chart data');
             const chartData = await messagesChartResponse.json();
             setMessagesChartData(chartData);
+
+            if (!botSummaryResponse.ok) {
+                throw new Error('Failed to fetch Telegram bot stats');
+            }
+
+            const botSummaryData = await botSummaryResponse.json();
+            setBotSummary(botSummaryData);
 
 
         } catch (error) {
@@ -746,6 +763,83 @@ const Dashboard = (props) => {
                 color: '#38ef7d',
                 icon: '📅'
             }),
+        ]),
+
+        botSummary && React.createElement('div', {
+            key: 'bot-summary-section',
+            style: {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '24px',
+                marginBottom: '40px'
+            }
+        }, [
+            React.createElement('div', {
+                key: 'bot-summary-header',
+                style: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                }
+            }, [
+                React.createElement('h2', {
+                    key: 'title',
+                    style: {
+                        margin: 0,
+                        color: LIGHT_THEME.textPrimary,
+                        fontSize: '22px'
+                    }
+                }, 'Telegram Bot Interactions'),
+                React.createElement('p', {
+                    key: 'description',
+                    style: {
+                        margin: 0,
+                        color: LIGHT_THEME.textSecondary,
+                        fontSize: '14px'
+                    }
+                }, 'Monitor how users interact with the Telegram bot and its quick action buttons.')
+            ]),
+
+            React.createElement('div', {
+                key: 'bot-summary-cards',
+                style: {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '20px'
+                }
+            }, [
+                React.createElement(StatBox, {
+                    key: 'bot-users',
+                    title: 'Bot Users',
+                    value: botSummary.total_users || 0,
+                    color: '#00c6ff',
+                    icon: '👥'
+                }),
+                React.createElement(StatBox, {
+                    key: 'bot-interactions',
+                    title: 'Total Interactions',
+                    value: botSummary.total_interactions || 0,
+                    color: '#ff758c',
+                    icon: '📲'
+                })
+            ]),
+
+            React.createElement('div', {
+                key: 'bot-buttons-grid',
+                style: {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '20px'
+                }
+            }, Object.entries(BOT_BUTTON_CONFIGS).map(([button, config]) => (
+                React.createElement(StatBox, {
+                    key: `bot-button-${button}`,
+                    title: `${config.label} Uses`,
+                    value: botSummary[button] || 0,
+                    color: config.color,
+                    icon: config.icon
+                })
+            )))
         ]),
 
         // Charts Grid
