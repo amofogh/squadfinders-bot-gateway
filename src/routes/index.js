@@ -10,6 +10,7 @@ import userMessageRoutes from './userMessages.js';
 import userSeenRoutes from './userSeen.js';
 import statsRoutes from './stats.js';
 import reactionRoutes from './reactions.js';
+import botUserStatRoutes from './botUserStats.js';
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use('/user-messages', userMessageRoutes);
 router.use('/user-seen', userSeenRoutes);
 router.use('/stats', statsRoutes);
 router.use('/reactions', reactionRoutes);
+router.use('/bot-user-stats', botUserStatRoutes);
 
 export default router;
