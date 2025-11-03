@@ -3,15 +3,14 @@ import {UserSeen, UserAnalytics} from '../models/index.js';
 import {handleAsyncError} from '../utils/errorHandler.js';
 import {validateMessageId} from '../utils/validators.js';
 import {createServiceLogger} from '../utils/logger.js';
-import createCsvWriter from 'csv-writer';
-import {promises as fs} from 'fs';
-import path from 'path';
 import {recordPlayer} from '../services/analyticsService.js';
+import {config} from '../config/index.js';
+
 
 const playerLogger = createServiceLogger('player-controller');
 
 
-const playerSpamInterval = Number(process.env.PLAYER_SPAM_INTERVAL_MINUTES) || 5
+const playerSpamInterval = Number(config.playerSpam.timeoutHours)
 
 export const playerController = {
     // Get all players with filtering and pagination
@@ -179,10 +178,10 @@ export const playerController = {
 
 
         if (sender?.id) {
-            const fiveMinutesAgo = new Date(Date.now() - playerSpamInterval * 60 * 1000);
+            const threeHoursAgo = new Date(Date.now() - playerSpamInterval * 60 * 60 * 1000);
             const recentPlayer = await Player.findOne({
                 'sender.id': sender.id,
-                createdAt: {$gte: fiveMinutesAgo}
+                createdAt: {$gte: threeHoursAgo}
             });
 
             if (recentPlayer) {

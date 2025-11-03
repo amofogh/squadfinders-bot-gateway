@@ -58,6 +58,9 @@ export const config = {
         intervalMinutes: parseNumber(process.env.MESSAGE_REQUEUE_INTERVAL_MINUTES, 5), // NEW: default 5 minutes
         enabled: true
     },
+    playerSpam: {
+        timeoutHours: process.env.PLAYER_SPAM_INTERVAL_Hours||3, // keep as-is
+    },
     userSeenCleanup: {
         enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false' || true, // Default true
         disableAfterMinutes: parseDurationMinutes({
