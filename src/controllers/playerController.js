@@ -181,6 +181,7 @@ export const playerController = {
             const threeHoursAgo = new Date(Date.now() - playerSpamInterval * 60 * 60 * 1000);
             const recentPlayer = await Player.findOne({
                 'sender.id': sender.id,
+                active: true,
                 createdAt: {$gte: threeHoursAgo}
             });
 
