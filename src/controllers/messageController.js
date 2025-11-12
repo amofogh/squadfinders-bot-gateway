@@ -80,7 +80,7 @@ export const messageController = {
     // Only expire messages if auto-expiry is enabled
     if (config.autoExpiry.enabled) {
       const expiryTime = new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000);
-      
+
       // Count messages that will be expired
       const expiredCount = await Message.countDocuments({
         ai_status: 'pending',
@@ -114,7 +114,7 @@ export const messageController = {
       }
     }
 
-    const expiryTime = config.autoExpiry.enabled 
+    const expiryTime = config.autoExpiry.enabled
       ? new Date(Date.now() - config.autoExpiry.expiryMinutes * 60 * 1000)
       : new Date(0); // If disabled, get all messages
 
@@ -123,8 +123,8 @@ export const messageController = {
       ai_status: 'pending',
       message_date: { $gte: expiryTime }
     })
-    .sort({ message_date: 1 }) // Oldest first
-    .limit(maxLimit);
+      .sort({ message_date: 1 }) // Oldest first
+      .limit(maxLimit);
 
     messageLogger.info('Found pending messages for processing', {
       foundCount: recentPendingMessages.length,
@@ -137,7 +137,7 @@ export const messageController = {
     if (recentPendingMessages.length > 0) {
       const messageIds = recentPendingMessages.map(msg => msg._id);
       const messageIdNumbers = recentPendingMessages.map(msg => msg.message_id);
-      
+
       messageLogger.info('Marking messages as processing', {
         count: messageIds.length,
         messageIds: messageIdNumbers.slice(0, 10), // Log first 10 IDs
@@ -185,7 +185,27 @@ export const messageController = {
 
   // Create new message
   create: handleAsyncError(async (req, res) => {
-    const { sender, group, message } = req.body;
+    const { message_id, message_date, sender, group, message } = req.body;
+
+    // Validate required fields
+    const errors = [];
+
+    // Use more precise checks - message_id can be 0, which is falsy but valid
+    if (message_id === undefined || message_id === null) errors.push('message_id is required');
+    if (!message_date) errors.push('message_date is required');
+    if (!sender || !sender.id || sender.id.trim() === '') errors.push('sender.id is required');
+    if (!sender || !sender.username || sender.username.trim() === '') errors.push('sender.username is required');
+    if (!group || !group.group_id || group.group_id.trim() === '') errors.push('group.group_id is required');
+    if (!group || !group.group_title || group.group_title.trim() === '') errors.push('group.group_title is required');
+    if (!group || !group.group_username || group.group_username.trim() === '') errors.push('group.group_username is required');
+    if (message === undefined || message === null || message.trim() === '') errors.push('message is required');
+
+    if (errors.length > 0) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: errors
+      });
+    }
 
     messageLogger.info('Creating new message', {
       senderId: sender?.id,
@@ -225,7 +245,7 @@ export const messageController = {
         }
       }
     }
-    
+
     const messageData = { ...req.body };
 
     if (sender?.id || sender?.username) {
@@ -254,11 +274,11 @@ export const messageController = {
 
     const newMessage = new Message(messageData);
     await newMessage.save();
-    
+
     // Record analytics
     if (sender?.id) {
       await recordUserMessage(sender.id, newMessage.message_date);
-      
+
       // Update username in analytics if provided
       if (sender.username) {
         await UserAnalytics.updateOne(
@@ -267,7 +287,7 @@ export const messageController = {
         );
       }
     }
-    
+
     messageLogger.info('Message created successfully', {
       messageId: newMessage.message_id,
       aiStatus: newMessage.ai_status,
@@ -309,7 +329,7 @@ export const messageController = {
     const message = await Message.findOneAndDelete({ message_id: parseInt(message_id, 10) });
 
     if (!message) {
-        return res.status(404).json({ error: 'Message not found' });
+      return res.status(404).json({ error: 'Message not found' });
     }
 
     res.json({

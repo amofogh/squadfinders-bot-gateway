@@ -37,6 +37,7 @@ export class CleanupService {
     }
 
     const intervalMinutes = config.userSeenCleanup.intervalMinutes;
+    console.log('intervalMinutes', intervalMinutes);
     logCleanup('Starting UserSeen cleanup service', {
       intervalMinutes,
       disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes
@@ -45,9 +46,9 @@ export class CleanupService {
     this.userSeenIntervalId = setInterval(async () => {
       await this.cleanupUserSeen();
     }, intervalMinutes * 60 * 1000);
-    
+
     this.isUserSeenRunning = true;
-    
+
     // Run immediately on start
     this.cleanupUserSeen();
   }
@@ -77,6 +78,8 @@ export class CleanupService {
     }
 
     const intervalMinutes = config.playerCleanup.intervalMinutes;
+    console.log('intervalMinutes', intervalMinutes);
+
     logCleanup('Starting Player cleanup service', {
       intervalMinutes,
       disableAfterMinutes: config.playerCleanup.disableAfterMinutes
@@ -85,9 +88,9 @@ export class CleanupService {
     this.playerIntervalId = setInterval(async () => {
       await this.cleanupPlayers();
     }, intervalMinutes * 60 * 1000);
-    
+
     this.isPlayerRunning = true;
-    
+
     // Run immediately on start
     this.cleanupPlayers();
   }
@@ -102,40 +105,45 @@ export class CleanupService {
     }
   }
 
-  // Disable UserSeen records older than configured minutes
+  // Delete UserSeen records older than configured minutes
   async cleanupUserSeen() {
     if (!config.userSeenCleanup.enabled) return;
 
     try {
       const cutoffTime = new Date(Date.now() - config.userSeenCleanup.disableAfterMinutes * 60 * 1000);
 
+      console.log('🧹 UserSeen cleanup running at:', new Date().toISOString());
+      console.log('   Config:', {
+        disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes,
+        intervalMinutes: config.userSeenCleanup.intervalMinutes
+      });
+      console.log('   Will delete records older than:', cutoffTime.toISOString());
+
       logCleanup('Starting UserSeen cleanup', {
         cutoffTime: cutoffTime.toISOString(),
         disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes
       });
 
-      const result = await UserSeen.updateMany(
-        {
-          active: true,
-          updatedAt: { $lt: cutoffTime }
-        },
-        {
-          $set: { active: false }
-        }
-      );
+      // Delete old UserSeen records entirely
+      const result = await UserSeen.deleteMany({
+        updatedAt: { $lt: cutoffTime }
+      });
 
-      if (result.modifiedCount > 0) {
+      console.log('   Result: Deleted', result.deletedCount, 'records');
+
+      if (result.deletedCount > 0) {
         logCleanup('UserSeen cleanup completed', {
-          disabledCount: result.modifiedCount,
+          deletedCount: result.deletedCount,
           disableAfterMinutes: config.userSeenCleanup.disableAfterMinutes,
           cutoffTime: cutoffTime.toISOString()
         });
       } else {
-        logCleanup('UserSeen cleanup - no records to disable', {
+        logCleanup('UserSeen cleanup - no records to delete', {
           cutoffTime: cutoffTime.toISOString()
         });
       }
     } catch (error) {
+      console.error('❌ UserSeen cleanup error:', error);
       logError(error, {
         service: 'cleanup',
         action: 'cleanupUserSeen',

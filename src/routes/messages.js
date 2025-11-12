@@ -14,6 +14,9 @@ const router = express.Router();
  *       required:
  *         - message_id
  *         - message_date
+ *         - sender
+ *         - group
+ *         - message
  *       properties:
  *         message_id:
  *           type: number
@@ -23,24 +26,37 @@ const router = express.Router();
  *           format: date-time
  *         sender:
  *           type: object
+ *           required:
+ *             - id
+ *             - username
  *           properties:
  *             id:
  *               type: string
+ *               description: Sender ID (required)
  *             username:
  *               type: string
+ *               description: Sender username (required)
  *             name:
  *               type: string
  *         group:
  *           type: object
+ *           required:
+ *             - group_id
+ *             - group_title
+ *             - group_username
  *           properties:
  *             group_id:
  *               type: string
+ *               description: Group ID (required)
  *             group_title:
  *               type: string
+ *               description: Group title (required)
  *             group_username:
  *               type: string
+ *               description: Group username (required)
  *         message:
  *           type: string
+ *           description: Message content (required)
  *         is_valid:
  *           type: boolean
  *           description: Whether the message is considered valid (e.g., a proper LFG message)

@@ -11,16 +11,34 @@ const MessageSchema = new mongoose.Schema({
     required: true,
   },
   sender: {
-    id: { type: String, default: null },
-    username: { type: String, default: null },
+    id: {
+      type: String,
+      required: [true, 'Sender ID is required']
+    },
+    username: {
+      type: String,
+      required: [true, 'Sender username is required']
+    },
     name: { type: String, default: null }
   },
   group: {
-    group_id: { type: String, default: null },
-    group_title: { type: String, default: null },
-    group_username: { type: String, default: null }
+    group_id: {
+      type: String,
+      required: [true, 'Group ID is required']
+    },
+    group_title: {
+      type: String,
+      required: [true, 'Group title is required']
+    },
+    group_username: {
+      type: String,
+      required: [true, 'Group username is required']
+    }
   },
-  message: { type: String, default: null },
+  message: {
+    type: String,
+    required: [true, 'Message content is required']
+  },
   is_valid: { type: Boolean, default: false },
   is_lfg: { type: Boolean, default: false },
   reason: { type: String, default: null },

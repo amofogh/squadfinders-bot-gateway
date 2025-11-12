@@ -9,7 +9,7 @@ const parseNumber = (value, defaultValue) => {
     return Number.isNaN(parsed) ? defaultValue : parsed;
 };
 
-const parseDurationMinutes = ({minutesEnv, hoursEnv, defaultMinutes}) => {
+const parseDurationMinutes = ({ minutesEnv, hoursEnv, defaultMinutes }) => {
     const minutesValue = parseNumber(process.env[minutesEnv], undefined);
     if (minutesValue !== undefined) {
         return minutesValue;
@@ -63,16 +63,8 @@ export const config = {
     },
     userSeenCleanup: {
         enabled: process.env.USER_SEEN_CLEANUP_ENABLED !== 'false' || true, // Default true
-        disableAfterMinutes: parseDurationMinutes({
-            minutesEnv: 'USER_SEEN_DISABLE_AFTER_MINUTES',
-            hoursEnv: 'USER_SEEN_DISABLE_AFTER_HOURS',
-            defaultMinutes: 2 * 60
-        }),
-        intervalMinutes: parseDurationMinutes({
-            minutesEnv: 'USER_SEEN_CLEANUP_INTERVAL_MINUTES',
-            hoursEnv: 'USER_SEEN_CLEANUP_INTERVAL_HOURS',
-            defaultMinutes: 12 * 60
-        })
+        disableAfterMinutes: process.env.USER_SEEN_DISABLE_AFTER_MINUTES || 12 * 60, // For testing: delete records older than 1 minute
+        intervalMinutes: process.env.USER_SEEN_CLEANUP_INTERVAL_MINUTES || 12 * 60 // For testing: run every 1 minute
     },
     playerCleanup: {
         enabled: process.env.PLAYER_CLEANUP_ENABLED !== 'false' || true, // Default true
@@ -84,7 +76,7 @@ export const config = {
         intervalMinutes: parseDurationMinutes({
             minutesEnv: 'PLAYER_CLEANUP_INTERVAL_MINUTES',
             hoursEnv: 'PLAYER_CLEANUP_INTERVAL_HOURS',
-            defaultMinutes: 12 * 60
+            defaultMinutes: process.env.PLAYER_CLEANUP_INTERVAL_MINUTES || 12 * 60
         })
     },
     messageSpam: {
