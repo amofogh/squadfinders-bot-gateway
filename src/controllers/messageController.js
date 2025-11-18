@@ -193,12 +193,12 @@ export const messageController = {
     // Use more precise checks - message_id can be 0, which is falsy but valid
     if (message_id === undefined || message_id === null) errors.push('message_id is required');
     if (!message_date) errors.push('message_date is required');
-    if (!sender || !sender.id || sender.id.trim() === '') errors.push('sender.id is required');
-    if (!sender || !sender.username || sender.username.trim() === '') errors.push('sender.username is required');
-    if (!group || !group.group_id || group.group_id.trim() === '') errors.push('group.group_id is required');
-    if (!group || !group.group_title || group.group_title.trim() === '') errors.push('group.group_title is required');
-    if (!group || !group.group_username || group.group_username.trim() === '') errors.push('group.group_username is required');
-    if (message === undefined || message === null || message.trim() === '') errors.push('message is required');
+    if (!sender || sender.id === undefined || sender.id === null || String(sender.id).trim() === '') errors.push('sender.id is required');
+    if (!sender || !sender.username || (typeof sender.username === 'string' && sender.username.trim() === '')) errors.push('sender.username is required');
+    if (!group || group.group_id === undefined || group.group_id === null || String(group.group_id).trim() === '') errors.push('group.group_id is required');
+    if (!group || !group.group_title || (typeof group.group_title === 'string' && group.group_title.trim() === '')) errors.push('group.group_title is required');
+    if (!group || !group.group_username || (typeof group.group_username === 'string' && group.group_username.trim() === '')) errors.push('group.group_username is required');
+    if (message === undefined || message === null || (typeof message === 'string' && message.trim() === '')) errors.push('message is required');
 
     if (errors.length > 0) {
       return res.status(400).json({
