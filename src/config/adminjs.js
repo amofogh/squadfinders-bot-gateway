@@ -5,7 +5,7 @@ import { PrefilterResult } from '../models/index.js';
 import { GamingGroup } from '../models/index.js';
 import { UserSeen } from '../models/index.js';
 import { CanceledUser, UserMessage } from '../models/index.js';
-import { Reaction, UserAnalytics } from '../models/index.js';
+import { Reaction, UserAnalytics, UserStats } from '../models/index.js';
 import { componentLoader } from './componentLoader.js';
 import { config } from './index.js';
 
@@ -526,10 +526,55 @@ export const adminJS = new AdminJS({
       }
     },
     {
+      resource: UserStats,
+      options: {
+        list: {
+          perPage: DEFAULT_LIST_PER_PAGE,
+        },
+        actions: withDefaultListPerPage({
+          new: { isAccessible: false },
+          edit: { isAccessible: isAdmin },
+          delete: { isAccessible: isAdmin },
+          bulkDelete: { isAccessible: isAdmin },
+          list: { isAccessible: true },
+          show: { isAccessible: true },
+        }),
+        navigation: {
+          name: 'User Engagement',
+          icon: 'MousePointer'
+        },
+        sort: {
+          sortBy: 'total_clicks',
+          direction: 'desc'
+        },
+        listProperties: [
+          'user_id',
+          'username',
+          'total_clicks',
+          'button_clicks.find_player.count',
+          'button_clicks.dont_want_to_play.count',
+          'button_clicks.about_us.count',
+          'button_clicks.channel_and_group.count'
+        ],
+        filterProperties: [
+          'user_id',
+          'username'
+        ],
+        showProperties: [
+          'user_id',
+          'username',
+          'button_clicks',
+          'total_clicks',
+          'createdAt',
+          'updatedAt'
+        ]
+      }
+    },
+    {
       resource: AdminUser,
       options: {
         list: {
-            perPage: DEFAULT_LIST_PER_PAGE,
+          perPage: DEFAULT_LIST_PER_PAGE,
         },
         actions: withDefaultListPerPage({
           new: { isAccessible: isSuperAdmin },
@@ -632,7 +677,9 @@ export const adminJS = new AdminJS({
           Reaction: 'Reaction',
           reactions: 'Reactions',
           UserAnalytics: 'User Analytics',
-          userAnalytics: 'User Analytics'
+          userAnalytics: 'User Analytics',
+          UserStats: 'User Stats',
+          userStats: 'User Stats'
         }
       }
     }

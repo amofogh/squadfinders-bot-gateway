@@ -8,4 +8,5 @@ export * from './CanceledUser.js';
 export * from './UserMessage.js';
 export * from './Reaction.js';
 export * from './UserAnalytics.js';
+export * from './UserStats.js';
 
